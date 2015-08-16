@@ -12,6 +12,7 @@ reader: reader.c format.h
 	gcc ${CFLAGS} -o reader reader.c
 
 install: cap reader
+	mkdir -p ../bin/
 	cp cap reader ../bin/
 
 clean:

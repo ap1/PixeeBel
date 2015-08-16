@@ -1,5 +1,5 @@
 
-def toUbyte( c ):
+def toUbyte_( c ):
    '''Convert signed byte to unsigned byte.'''
    if c < -128:
       # this should be 128 because we return 
@@ -13,6 +13,16 @@ def toUbyte( c ):
       return 127
 
    return c
+
+def toUbyte( data ):
+   if hasattr( data, '__iter__' ):
+      return [ toUbyte_( d ) for d in data ]
+   return toUbyte_( data )
+
+def toFloat( data ):
+   if hasattr( data, '__iter__' ):
+      return [ float( d ) for d in data ]
+   return float( data )
 
 def writeListAsRaw( data_in, filename="data.raw" ):
    '''Write a list of integers to filename.'''

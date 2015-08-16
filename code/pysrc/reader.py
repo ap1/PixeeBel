@@ -43,7 +43,7 @@ def read_one_frame():
 def cleanup():
    reader.close_file( fd )
 
-def perframe( channels, lambdaOp=None, filt=None ):
+def perframe( channels, lambdaOp=None, filt=None, numFrames=1 ):
 
    while True:
       samples = dict( ( ( channel, [] ) for channel in channels ) )
@@ -67,9 +67,4 @@ def perframe( channels, lambdaOp=None, filt=None ):
                            for c in channels ))
 
       yield ( header, samples )
-
-# Usage:
-#     load( "data/samples-1439671035.dat" )
-#     ( header, samples ) = read_one_frame()
-#     cleanup()
 

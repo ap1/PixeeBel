@@ -28,9 +28,11 @@ if __name__ == "__main__":
 
    reader.load( sys.argv[1] )
    for header, frSamples in reader.perframe( channels,
-                           lambdaOp=lambda d: numpy.array(toFloat(removeDc(d))),
+                           lambdaOp=lambda d: toFloat(removeDc(d)),
                            numFrames=3 ):
       deltaTime += deltaSampling
+      frSamples = dict(( ( channel, numpy.array(data) )
+                         for channel, data in frSamples.items() ))
       max0 = max( [ abs(r) for r in frSamples[channels[0]] ] )
       max1 = max( [ abs(r) for r in frSamples[channels[1]] ] )
       diff = frSamples[0] - frSamples[1] * max0/max1

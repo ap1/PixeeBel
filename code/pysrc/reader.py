@@ -3,6 +3,7 @@ import struct
 import collections
 import itertools
 import filters
+from Queue import deque
 
 
 buf = ctypes.create_string_buffer( 2048 )
@@ -44,6 +45,11 @@ def cleanup():
    reader.close_file( fd )
 
 def perframe( channels, lambdaOp=None, filt=None, numFrames=1 ):
+   
+   assert( numFrames > 0 )
+
+   if numFrames > 1:
+      queue = deque()
 
    while True:
       samples = dict( ( ( channel, [] ) for channel in channels ) )
@@ -66,5 +72,19 @@ def perframe( channels, lambdaOp=None, filt=None, numFrames=1 ):
          samples = dict(( ( c, filters.apply( samples[c], filt ) )
                            for c in channels ))
 
-      yield ( header, samples )
+      if numFrames == 1:
+         yield ( header, samples )
+      else:
+         queue.append( samples )
+         if len( queue ) > numFrames:
+            queue.popleft()
 
+         header.num_samples *= len( queue )
+
+         # generate merged dictionary
+         samples = dict( ( ( channel, [] ) for channel in channels ) )
+         for queueItem in queue:
+            for channel, data in queueItem.items():
+               samples[channel].extend( data )
+
+         yield ( header, samples )

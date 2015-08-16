@@ -33,7 +33,7 @@ def apply( data, filt, freq=None ):
    of a signal and applies the filter and returns the time-domain result
    and the frequency domain representation.'''
 
-   freq = freq or fft.fft( data )
+   freq = fft.fft( data ) if freq is None else freq
    freq = mult( freq, filt )
    ifft = fft.ifft( freq )
 

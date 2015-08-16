@@ -14,12 +14,12 @@ def load( filename ):
    global reader
    global fd
    reader = ctypes.CDLL( "capture/libreader.so" )
-   fd = reader.open_file( "data/samples-1439671035.dat" )
+   fd = reader.open_file( filename )
 
 def read_one_frame():
    res = reader.read_one_frame( fd, bufP )
-   if res <= 0:
-      return
+   if res == 0:
+      return None
 
    bufH = collections.namedtuple( "BufH", "sample_seq num_channels " \
                                           "num_samples send_timestamp" )

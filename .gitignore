@@ -8,3 +8,5 @@ libreader.so
 
 code/capture/cap
 code/capture/reader
+code/bin/cap
+code/bin/reader

@@ -1,13 +1,17 @@
-all: cap reader
+all: subdirs
 
-CFLAGS=-Wall -ggdb
+DIRS = capture
 
-cap: cap.c format.h
-	gcc ${CFLAGS} -o cap cap.c
+subdirs:
+	for dir in $(DIRS); do \
+		$(MAKE) -C $$dir; \
+	done
 
-reader: reader.c format.h
-	gcc ${CFLAGS} -o reader reader.c
+install:
+	for dir in $(DIRS); do \
+		$(MAKE) -C $$dir install; \
+	done
 
 clean:
-	rm -f cap reader
+	rm -f {bin,capture}/{cap,reader} capture/libreader.so
 

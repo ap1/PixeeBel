@@ -69,6 +69,25 @@ void read_all_frames(int fd, int channel)
 }
 
 
+int open_file(char *filename)
+{
+   int fd;
+
+   if ((fd = open(filename, O_RDONLY))==-1) {
+      printf("Can't open %s for reading\n", filename);
+      return -1;
+   }
+
+   return fd;
+}
+
+
+void close_file(int fd)
+{
+   close(fd);
+}
+
+
 int main(int argc, char *argv[])
 {
    int fd;
@@ -78,14 +97,11 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   if ((fd = open(argv[1], O_RDONLY))==-1) {
-      printf("Can't open %s for reading\n", argv[1]);
-      return -1;
-   }
+   fd = open_file( argv[1] );
 
    read_all_frames(fd, atoi(argv[2]));
 
-   close(fd);
+   close_file(fd); 
 
    return 0;
 }

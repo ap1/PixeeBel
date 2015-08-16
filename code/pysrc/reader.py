@@ -13,7 +13,7 @@ reader = None
 def load( filename ):
    global reader
    global fd
-   reader = ctypes.CDLL( "capture/libreader.so" )
+   reader = ctypes.CDLL( "../capture/libreader.so" )
    fd = reader.open_file( filename )
 
 def read_one_frame():

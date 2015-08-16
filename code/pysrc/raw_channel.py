@@ -7,8 +7,7 @@ channels = 0
 
 samples = None
 
-#reader.load( "data/samples-1439671035.dat" )
-reader.load( "data/samples-1439673160.dat" )
+reader.load( "data/samples-1439671035.dat" )
 
 def ubyte( c ):
    if c < -128:

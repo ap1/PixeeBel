@@ -1,5 +1,5 @@
 
-def ubyte( c ):
+def toUbyte( c ):
    '''Convert signed byte to unsigned byte.'''
    if c < -128:
       # this should be 128 because we return 

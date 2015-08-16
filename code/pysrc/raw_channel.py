@@ -3,8 +3,8 @@
 import reader
 import numpy
 import sys
-from filters import removeDC as removeDC
-from utils import writeListAsRaw
+from filters import removeDc as removeDc
+from utils import writeListAsRaw, toUbyte
 import pdb
 
 if len( sys.argv ) != 2:
@@ -15,7 +15,7 @@ if len( sys.argv ) != 2:
 # main
 # ---------------------------------
 
-channels = [ 0 ]
+channels = [ 0, 1 ]
 samples = None
 
 if __name__ == "__main__":
@@ -23,12 +23,12 @@ if __name__ == "__main__":
    samples = dict( ( ( channel, [] ) for channel in channels ) )
 
    reader.load( sys.argv[1] )
-   for header, frSamples in reader.perframe( channels, lambdaOp=removeDC ):
+   for header, frSamples in reader.perframe( channels, lambdaOp=removeDc ):
       for channel, data in frSamples.items():
          samples[channel].extend( data )
 
    for channel in channels:
-      writeListAsRaw( samples[channel],
+      writeListAsRaw( ( toUbyte( v ) for v in samples[channel] ),
                       filename="data%d.raw" % channel )
    reader.cleanup()
 

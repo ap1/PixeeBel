@@ -3,3 +3,8 @@
 *.tgz
 *.pyc
 *.zip
+
+libreader.so
+
+code/capture/cap
+code/capture/reader

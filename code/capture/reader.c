@@ -28,7 +28,7 @@ void process_chunk(struct buffer_h *buf, int channel)
 
 
 /* return 0 on failure, otherwise number of samples */
-int read_one_frame(int fd, struct buffer_h *buf)
+int read_one_frame(int fd, struct buffer_h *buf, int b_debug)
 {
    int n;
    unsigned bytes;
@@ -38,10 +38,10 @@ int read_one_frame(int fd, struct buffer_h *buf)
       fprintf(stderr, "can't read the header\n");
       return 0;
    }
-
-   fprintf(stderr, "chunk: seq %d channels %d samples %d ts %d\n",
-           buf->sample_seq, buf->num_channels,
-           buf->num_samples, buf->send_timestamp);
+   if(b_debug)
+     fprintf(stderr, "chunk: seq %d channels %d samples %d ts %d\n",
+             buf->sample_seq, buf->num_channels,
+             buf->num_samples, buf->send_timestamp);
 
    bytes = DATA_MEM(buf->num_channels, buf->num_samples);
    n = read(fd, buf->data, bytes);
@@ -61,7 +61,7 @@ void read_all_frames(int fd, int channel)
    unsigned int num_samples;
    char buf[BUF_SIZE];
 
-   while ((num_samples=read_one_frame(fd, (struct buffer_h *) buf))) {
+   while ((num_samples=read_one_frame(fd, (struct buffer_h *) buf, 0))) {
       fprintf(stderr, "read %d samples\n", num_samples);
 
       process_chunk((struct buffer_h *) buf, channel);

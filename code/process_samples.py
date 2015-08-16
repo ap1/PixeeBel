@@ -32,14 +32,24 @@ def LoadSamples(samples_file):
 def printLine():
   print "-----------"
 
-def gaussian(n, sigma):
+def gaussian(n, sigma, scale):
   r = range(-int(n/2),int(n/2)+1)
-  return [1 / (sigma * sqrt(2*pi)) * exp(-float(x)**2/(2*sigma**2)) for x in r]
+  return [scale / (sigma * sqrt(2*pi)) * exp(-float(x)**2/(2*sigma**2)) for x in r]
+
+def invGaussian(n, sigma, scale):
+  r = range(-int(n/2),int(n/2)+1)
+  return [scale - (scale / (sigma * sqrt(2*pi))) * exp(-float(x)**2/(2*sigma**2)) for x in r]
+
+def threshold(signal, minval, maxval):
+  return [math.max(math.min(s, maxval), minval) for s in signal]
 
 def RemoveDCComponent(data):
   dc = numpy.average(data)
   print "dc value is " + str(dc)
   return [v - dc for v in data]
+
+def SumList(arr1, arr2):
+  return [a1+a2 for a1, a2 in zip(arr1, arr2)]
 
 # ---- Main ---- #
 def Main():
@@ -67,7 +77,13 @@ def Main():
   signal_mic0 = RemoveDCComponent(samples_mic0)
   #print signal_mic0[0:25]
 
-  lowPassKernel = gaussian(255, 1)
+  lowPassKernel = gaussian(64, 1, 1.0) # SumList(gaussian(65, 8, 1.0), invGaussian(65, 2, 0.01))
+
+  plt.plot(range(0, len(lowPassKernel)), lowPassKernel, label='filter kernel')
+
+  plt.show()
+
+  #signal_mic0 = threshold(signal_mic0, )
 
   lowpass_mic0 = numpy.convolve(signal_mic0, lowPassKernel, "same")
 
@@ -78,8 +94,8 @@ def Main():
   print "%d %d %d %d" % (len(x), len(samples_mic0), len(signal_mic0), len(lowpass_mic0))
 
   #plt.plot(x, samples_mic0)
-  plt.plot(x, signal_mic0)
-  plt.plot(x, lowpass_mic0)
+  plt.plot(x, signal_mic0, label='zero mean signal')
+  plt.plot(x, lowpass_mic0, label='low pass output')
 
   plt.show()
 

@@ -2,47 +2,33 @@
 
 import reader
 import numpy
+import sys
+from filters import removeDC as removeDC
+from utils import writeListAsRaw
+import pdb
 
-channels = 0
+if len( sys.argv ) != 2:
+   print "Usage: %s dat-file" % sys.argv[0]
+   sys.exit( 0 )
 
+# ---------------------------------
+# main
+# ---------------------------------
+
+channels = [ 0 ]
 samples = None
 
-reader.load( "data/samples-1439671035.dat" )
+if __name__ == "__main__":
 
-def ubyte( c ):
-   if c < -128:
-      # this should be 128 because we return 
-      # to unsigned byte
-      return 128
+   samples = dict( ( ( channel, [] ) for channel in channels ) )
 
-   if c < 0:
-      return 256 + c
+   reader.load( sys.argv[1] )
+   for header, frSamples in reader.perframe( channels, lambdaOp=removeDC ):
+      for channel, data in frSamples.items():
+         samples[channel].extend( data )
 
-   if c > 127:
-      return 127
-
-   return c
-
-def removeDC( data ):
-  dc = int( numpy.average( data ) )
-  return [ ubyte( v - dc ) for v in data ]
-
-while True:
-   parsed = reader.read_one_frame()
-   if not parsed:
-      break
-
-   ( header, frameSamples ) = parsed
-   if not samples:
-      samples = dict( ( ( channel, [] ) for channel in range( header.num_channels ) ) )
-
-   for channel, data in frameSamples.items():
-      data = removeDC( data )
-      samples[channel].extend( data )
-
-with open( "data.raw", "wb" ) as f:
-   data = bytearray( samples[channel] )
-   f.write( data )
-
-reader.cleanup()
+   for channel in channels:
+      writeListAsRaw( samples[channel],
+                      filename="data%d.raw" % channel )
+   reader.cleanup()
 

@@ -1,4 +1,6 @@
+import numpy
 import numpy.fft as fft
+from utils import ubyte
 
 def lpf( N, cutoffInHz ):
    filt = [ 1.0 for i in range( N ) ]
@@ -38,4 +40,8 @@ def apply( data, filt, freq=None ):
    ifft = fft.ifft( freq )
 
    return ifft, freq
+
+def removeDC( data ):
+  dc = int( numpy.average( data ) )
+  return [ ubyte( v - dc ) for v in data ]
 

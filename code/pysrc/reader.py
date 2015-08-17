@@ -2,6 +2,7 @@ import ctypes
 import struct
 import collections
 import itertools
+import filters
 
 
 buf = ctypes.create_string_buffer( 2048 )
@@ -42,8 +43,28 @@ def read_one_frame():
 def cleanup():
    reader.close_file( fd )
 
-# Usage:
-#     load( "data/samples-1439671035.dat" )
-#     ( header, samples ) = read_one_frame()
-#     cleanup()
+def perframe( channels, lambdaOp=None, filt=None, numFrames=1 ):
+
+   while True:
+      samples = dict( ( ( channel, [] ) for channel in channels ) )
+      parsed = read_one_frame()
+      if not parsed:
+         break
+
+      ( header, frameSamples ) = parsed
+
+      for channel, data in frameSamples.items():
+         if channel not in channels:
+            continue
+         samples[channel].extend( data )
+
+      if lambdaOp:
+         samples = dict( ( ( c, lambdaOp( samples[c] ) )
+                           for c in channels ) )
+
+      if filt:
+         samples = dict(( ( c, filters.apply( samples[c], filt ) )
+                           for c in channels ))
+
+      yield ( header, samples )
 

@@ -1,3 +1,4 @@
+import numpy
 import numpy.fft as fft
 
 def lpf( N, cutoffInHz ):
@@ -38,4 +39,8 @@ def apply( data, filt, freq=None ):
    ifft = fft.ifft( freq )
 
    return ifft, freq
+
+def removeDc( data ):
+  dc = int( numpy.average( data ) )
+  return [ v - dc for v in data ]
 

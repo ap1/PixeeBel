@@ -1,15 +1,13 @@
 all: sender
 
-CFLAGS=-ggdb -Wall
+CFLAGS=-ggdb -Wall -I../bbb_common/
 
-SENDERFILES=sender.o msg_queue.o
+COMMON_SOURCES=../bbb_common/msg_queue.c
+COMMON_HEADERS=../bbb_common/msg_queue.h ../bbb_common/pb_msg.h
 
-%.o: $.c pb_msg.h msg_queue.h
-	gcc $(CFLAGS) -c -o $@ $<
-
-sender: $(SENDERFILES)
-	gcc $(CFLAGS) -o sender $(SENDERFILES)
+sender: sender.c $(COMMON_SOURCES) $(COMMON_HEADERS)
+	gcc $(CFLAGS) -o sender sender.c $(COMMON_SOURCES)
 
 clean:
-	rm -f sender $(SENDERFILES)
+	rm -f sender
 

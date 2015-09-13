@@ -36,15 +36,15 @@ on to the target Beaglebone Black device. "scp" is the method used. Fix the SCP_
 variable in Makefile before using "make copy".
 
 
-Compiling
----------
+3. Compiling
+------------
 
 Simply running "make" should compile the code and generate text.bin and data.bin
 needed to run on the PRU for capturing 4 analog channels.
 
 
-Installing
-----------
+4. Installing
+-------------
 
 "make copy" copies the files on to the target BBB device.
 

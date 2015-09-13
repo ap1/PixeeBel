@@ -234,3 +234,16 @@ uint16_t pid_ctrl(register uint32_t A0, register uint32_t A1, register uint32_t 
 
   return 0;
 }
+
+
+void
+generate_host_interrupt( register uint8_t i )
+{
+   /* r14.b0 has the interrupt value */
+
+   __asm__ __volatile__
+   (
+      "   MOV r31.b0, r14.b0 \n"
+   );
+}
+

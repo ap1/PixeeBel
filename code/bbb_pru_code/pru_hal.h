@@ -19,5 +19,6 @@ uint16_t adc_read1(register uint32_t, register uint32_t, register uint32_t);
 uint16_t adc_read2(register uint32_t, register uint32_t, register uint32_t);
 uint16_t adc_read3(register uint32_t, register uint32_t, register uint32_t);
 
+void generate_host_interrupt( register uint8_t );
 
 #endif /* PRU_HAL_H_INCLUDED */

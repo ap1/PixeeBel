@@ -103,11 +103,13 @@ int main(void)
 
       if ( count >= SAMPLES_PER_MSG ) {
          count = 0;
+         WR_COUNT( count );
+
          seqno++;
 
          // XXX Signal to host that data is ready for reading
          WR_SEQNO( seqno );
-
+         generate_host_interrupt( PRU0_ARM_DONE_INTERRUPT );
       }
 
       // Idle some until time for the next sample

@@ -2,6 +2,10 @@
 #include "pru_hal.h"
 #include "../bbb_common/pb_msg.h"
 
+/* TODO
+   1. signaling to host
+*/
+
 /* Shared memory layout is the following
 
    +-----------------+
@@ -77,10 +81,6 @@ int main(void)
    ocp_init();
    shm_init();
 
-   // We want a delay of abuot 100us (10kHz) between samples. Since
-   // the PRU runs at 200MHz (5ns per op), we want 20000 ops for
-   // an approximate delay of 100us.
-
    WR_MAGIC( 0x0ADCDA8A );
 
    WR_SEQNO( seqno );
@@ -111,7 +111,13 @@ int main(void)
       }
 
       // Idle some until time for the next sample
-      for ( idle=0; idle < 1900; ++idle ) { seqno = seqno; };
+      //
+      // We want a delay of abuot 100us (10kHz) between samples. Since
+      // the PRU runs at 200MHz (5ns per op), we want 20000 ops for
+      // an approximate delay of 100us. Since one iteration is 
+      // approximately 10 assembly instructions, counting up to 2000
+      // for now.
+      for ( idle=0; idle < 2000; ++idle ) { seqno = seqno; };
    }
 
    __halt();

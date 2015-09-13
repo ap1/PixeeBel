@@ -106,10 +106,11 @@ int main(void)
          WR_COUNT( count );
 
          seqno++;
-
-         // XXX Signal to host that data is ready for reading
          WR_SEQNO( seqno );
-         generate_host_interrupt( PRU0_ARM_DONE_INTERRUPT );
+
+         // Signal to host that data is ready for reading
+         for ( idle=0; idle < 2; ++idle ) { seqno = seqno; }
+         generate_host_interrupt( PRU0_ARM_DONE_INTERRUPT + 16 );
       }
 
       // Idle some until time for the next sample
@@ -119,7 +120,7 @@ int main(void)
       // an approximate delay of 100us. Since one iteration is 
       // approximately 10 assembly instructions, counting up to 2000
       // for now.
-      for ( idle=0; idle < 2000; ++idle ) { seqno = seqno; };
+      for ( idle=0; idle < 2000; ++idle ) { seqno = seqno; }
    }
 
    __halt();

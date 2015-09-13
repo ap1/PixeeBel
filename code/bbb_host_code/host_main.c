@@ -5,9 +5,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include <signal.h>
+
 #include "prussdrv.h"
 #include "pruss_intc_mapping.h"
 #include "common/mio.h"
+#include "../bbb_common/pb_msg.h"
+#include "../bbb_common/msg_queue.h"
 
 #define PERROR() printf("[!] %s:%u\n", __FUNCTION__, __LINE__)
 
@@ -18,8 +21,11 @@
 /* doc: spruh73c, table 8.28 */
 #define CM_WKUP_ADC_TSC_CLKCTRL 0xbc
 
-/* host pru shared memory */
 
+#define PRU_NUM 0
+
+
+/* host pru shared memory */
 static void zero_words(size_t n)
 {
 	mio_handle_t mio;
@@ -37,6 +43,7 @@ static void zero_words(size_t n)
 	mio_close(&mio);
 }
 
+
 static int cm_wkup_enable_adc_tsc(void)
 {
 	mio_handle_t mio;
@@ -49,6 +56,37 @@ static int cm_wkup_enable_adc_tsc(void)
 }
 
 
+static int
+read_header( struct header *hp )
+{
+	static const size_t sharedram_offset = 2048;
+	volatile uint32_t* p;
+
+	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
+
+   memcpy( hp, &p[sharedram_offset], sizeof( struct header ) );
+
+	return 0;
+}
+
+
+static int
+read_channel_data( struct header *hp, msg *m )
+{
+	static const size_t sharedram_offset = 2048;
+   size_t data_offset = sizeof( struct header ) + ( ( hp->seqno - 1 ) % 2 ) * MSG_DATA_SIZE;
+	volatile uint32_t* p;
+
+	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
+
+   m->mtype = 1;
+   memcpy( &m->data, &p[sharedram_offset + data_offset], MSG_DATA_SIZE );
+
+	return 0;
+}
+
+
+/*
 static int read_words(uint32_t* x, size_t n)
 {
 	static const size_t sharedram_offset = 2048;
@@ -61,6 +99,7 @@ static int read_words(uint32_t* x, size_t n)
 
 	return 0;
 }
+*/
 
 
 /* sigint handler */
@@ -103,37 +142,6 @@ static void on_sigint(int x)
 #define CM_CLKSEL_DPLL_PERIPH 0x9c
 #define CM_DIV_M2_DPLL_MPU 0xa8
 
-
-static int cm_per_enable_pwmss(size_t i)
-{
-	/* enable clocking of the pwmss[i] */
-
-	static const size_t off[] =
-	{
-		CM_PER_EPWMSS0_CLKCTRL,
-		CM_PER_EPWMSS1_CLKCTRL,
-		CM_PER_EPWMSS2_CLKCTRL
-	};
-	mio_handle_t mio;
-
-	if (mio_open(&mio, CM_PER_MIO_ADDR, CM_PER_MIO_SIZE)) return -1;
-	mio_write_uint32(&mio, off[i], 2);
-	mio_close(&mio);
-
-	return 0;
-}
-
-
-/* epwm */
-
-static int epwm_setup(void)
-{
-	cm_per_enable_pwmss(0);
-	cm_per_enable_pwmss(1);
-	cm_per_enable_pwmss(2);
-
-	return 0;
-}
 
 /* tsc adc */
 
@@ -213,94 +221,58 @@ static int adc_setup(void)
 	return 0;
 }
 
-static void setup_per_dpll(mio_handle_t* mio, uint32_t m, uint32_t n)
-{
-	/* epwmss is clocked by L4_PER_CLK (table 8-21) */
-
-	/* figure 8-9, table 8-20 */
-	/* clock path: */
-	/* xtal master clock, clk_m_osc (25MHz) */
-	/* adpll, clkdcoldo */
-	/* hsdivider.m4, core_clkoutm4 (200MHz) */
-	/* prcm, /2 */
-	/* l4_per */
-
-	/* 8.1.1.6.6.1 */
-
-	uint32_t x;
-
-	x = mio_read_uint32(mio, CM_CLKSEL_DPLL_CORE);
-	x &= ~((1 << 20) - 1);
-	x |= (m << 8) | n;
-	mio_write_uint32(mio, CM_CLKSEL_DPLL_CORE, x);
-}
-
-static void print_clksel_dpll(mio_handle_t* mio)
-{
-	/* dpll_mult is M */
-	/* dpll_div  is N */
-
-	uint32_t x;
-
-	x = mio_read_uint32(mio, CM_CLKSEL_DPLL_CORE);
-	printf("dpll_mult      : 0x%08x\n", (x >> 8) & ((1 << 11) - 1));
-	printf("dpll_div       : 0x%08x\n", x & ((1 << 7) - 1));
-
-	printf("--\n");
-}
-
-
 
 
 /* main */
 
-int main(int ac, char** av)
+int
+main( int argc, char *argv[] )
 {
-	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
-	uint32_t x[8];
-	const size_t n = sizeof(x) / sizeof(x[0]);
-	size_t i;
-	//  mio_handle_t mio;
+   // Buffer written into
+   struct header hdr;
+   msg m;
 
-	//  print_clksel_dpll(&mio);
-	/* was: 960 24 */
-	//  setup_per_dpll(&mio, 40, 0);
-	//  print_clksel_dpll(&mio);
+   int qid;
+
+	tpruss_intc_initdata pruss_intc_initdata = PRUSS_INTC_INITDATA;
 
 	adc_setup();
-	//  epwm_setup();
-
 	prussdrv_init();
+   qid = mg_open( "/tmp/pb_msgqueue" );
 
-	if (prussdrv_open(PRU_EVTOUT_0))
-	{
-		printf("prussdrv_open open failed\n");
+	if ( prussdrv_open( PRU_EVTOUT_0 ) ) {
+		printf( "prussdrv_open open failed\n" );
 		return -1;
 	}
 
-	prussdrv_pruintc_init(&pruss_intc_initdata);
+	prussdrv_pruintc_init( &pruss_intc_initdata );
 
-	/* zero_words(n); */
+	// zero_words(n);
 
-#define PRU_NUM 0
-
-	/* write data from data.bin */
-	prussdrv_load_datafile(PRU_NUM, "./data.bin");
-
-	/* execute code on pru0 */
-	prussdrv_exec_program_at(PRU_NUM, "./text.bin", START_ADDR);
+	// Write data and execution code on PRU0
+	prussdrv_load_datafile( PRU_NUM, "./data.bin" );
+	prussdrv_exec_program_at( PRU_NUM, "./text.bin", START_ADDR );
 
 	signal(SIGINT, on_sigint);
-	while (is_sigint == 0)
-	{
-		usleep(200);
-		read_words(x, n);
-		printf("%u %u %u %u\n", x[4], x[5], x[6], x[7]);
+
+	while (is_sigint == 0) {
+      prussdrv_pru_wait_event( PRU_EVTOUT_0 );
+      prussdrv_pru_clear_event( PRU_EVTOUT_0, PRU0_ARM_DONE_INTERRUPT );
+
+      read_header( &hdr );
+
+      printf( "%x %d %d\n", hdr.magic, hdr.seqno, hdr.count );
+
+      read_channel_data( &hdr, &m );
+      mg_send( qid, &m );
 	}
 
-	/* disable pru and close memory mapping */
+	// Disable pru and close memory mapping
 	prussdrv_pru_disable(PRU_NUM);
 	prussdrv_exit();
+
+   // Release message queue
+   mg_release( qid );
 
 	return 0;
 }

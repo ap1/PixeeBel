@@ -16,6 +16,13 @@ typedef uint16_t     SAMPLE;
 typedef SAMPLE channel_data[SAMPLES_PER_MSG];
 
 
+// Shared memory starts with this header
+struct header {
+   uint32_t magic;
+   uint16_t seqno;
+   uint16_t count;
+};
+
 
 typedef struct msg_ {
    long mtype;

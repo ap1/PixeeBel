@@ -1,6 +1,6 @@
 PRU_SDK_DIR=../pru_sdk
 
-C_FILES := host_main.c $(PRU_SDK_DIR)/example/common/mio.c
+C_FILES := host_main.c $(PRU_SDK_DIR)/example/common/mio.c ../bbb_common/msg_queue.c
 DTS_FILES := pru_enable-00A0.dts
 
 CC := gcc
@@ -29,7 +29,7 @@ main:	$(O_FILES)
 %.bin : %.p
 	$(PASM) -V2 -I$(PRU_SDK_DIR)/include -b $<
 
-%.o : %.c
+%.o : %.c START_ADDR
 	$(CC) $(C_FLAGS) -c -o $@ $<
 
 %.dtbo : %.dts

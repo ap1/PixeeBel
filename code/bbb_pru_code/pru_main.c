@@ -1,4 +1,5 @@
 #include <stdint.h>
+
 #include "pru_hal.h"
 #include "../bbb_common/pb_msg.h"
 
@@ -52,13 +53,6 @@ Even seqnos are written into BUF0, odd seqnos are written into BUF1.
 The host code should read the buffer not being written actively.
 
 */
-
-// Shared memory starts with this header
-struct header {
-   uint32_t magic;
-   uint16_t seqno;
-   uint16_t count;
-};
 
 #define WR_MAGIC( magic )      shm_write_uint32( 0, (magic) )
 #define WR_SEQNO( seqno )      shm_write_uint16( 4, (seqno) )

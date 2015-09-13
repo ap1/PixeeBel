@@ -79,7 +79,7 @@ read_channel_data( struct header *hp, msg *m )
 
 	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
 
-   m->mtype = 1;
+   m->mtype = MG_TYPE;
    memcpy( &m->data, &p[sharedram_offset + data_offset], MSG_DATA_SIZE );
 
 	return 0;

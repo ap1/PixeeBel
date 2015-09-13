@@ -15,7 +15,7 @@ main(int argc, char *argv[])
 
    printf("qid %d\n", qid);
 
-   foo.mtype = 1;
+   foo.mtype = MG_TYPE;
 
    for (i=0; i<10; i++) {
       foo.data[0][i] = i;

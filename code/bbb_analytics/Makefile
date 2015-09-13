@@ -1,4 +1,4 @@
-all: sender
+all: sender drain
 
 CFLAGS=-ggdb -Wall -I../bbb_common/
 
@@ -8,6 +8,9 @@ COMMON_HEADERS=../bbb_common/msg_queue.h ../bbb_common/pb_msg.h
 sender: sender.c $(COMMON_SOURCES) $(COMMON_HEADERS)
 	gcc $(CFLAGS) -o sender sender.c $(COMMON_SOURCES)
 
+drain: drain.c $(COMMON_SOURCES) $(COMMON_HEADERS)
+	gcc $(CFLAGS) -o drain drain.c $(COMMON_SOURCES)
+
 clean:
-	rm -f sender
+	rm -f sender drain
 

@@ -6,6 +6,8 @@
 #include "pb_msg.h"
 
 
+#define MG_TYPE         (1)
+
 // Returns queueid
 int mg_open( char *path );
 

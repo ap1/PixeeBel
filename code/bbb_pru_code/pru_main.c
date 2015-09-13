@@ -1,73 +1,121 @@
 #include <stdint.h>
 #include "pru_hal.h"
+#include "../bbb_common/pb_msg.h"
+
+/* Shared memory layout is the following
+
+   +-----------------+
+   | header: magic   |    4 bytes
+   | header: seqno   |    2 bytes
+   | header: count   |    2 bytes
+   +-----------------+
+   | BUF0: channel0  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF0: channel1  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF0: channel2  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF0: channel3  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF1: channel0  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF1: channel1  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF1: channel2  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+   | BUF1: channel3  |    sizeof(SAMPLE) * SAMPLES_PER_MSG
+   |       data      |    bytes
+   |       ...       |
+   +-----------------+
+
+seqno is the active seqno for which data is being written.
+Even seqnos are written into BUF0, odd seqnos are written into BUF1.
+
+The host code should read the buffer not being written actively.
+
+*/
+
+// Shared memory starts with this header
+struct header {
+   uint32_t magic;
+   uint16_t seqno;
+   uint16_t count;
+};
+
+#define WR_MAGIC( magic )      shm_write_uint32( 0, (magic) )
+#define WR_SEQNO( seqno )      shm_write_uint16( 4, (seqno) )
+#define WR_COUNT( count )      shm_write_uint16( 6, (count) )
+
+#define WR_DATA( seqno, channel, count, data )      \
+             shm_write_uint16( sizeof(struct header) + \
+                               ( (seqno % 2) * NR_CHANNELS * SAMPLES_PER_MSG * sizeof(SAMPLE) ) + \
+                               ( (channel) * SAMPLES_PER_MSG * sizeof(SAMPLE) ) + \
+                               ( count ) * sizeof(SAMPLE), \
+                               ( data ) )
 
 int main(void)
 {
-   volatile float x = 3.1415;
-   volatile float y;
-   volatile uint32_t z[4];
-   int i, j;
-   x *= 12.345;
-   y = x * 1.2345;
+   volatile SAMPLE values[NR_CHANNELS];
+   volatile uint16_t seqno = 0;
+   volatile uint16_t count = 0;
+   int idle, channel;
 
-  ocp_init();
-  shm_init();
- 
-  /* i = 0; */
-  while (1) 
-  {
+   ocp_init();
+   shm_init();
 
-//      __asm__ __volatile__                                                   
-//      (                                                                      
-//      "  ADC_WAIT_DATA:    MOV r1, 0x44e0d0e4 \n" //ADC_MIO_ADDR + ADC_REG_FIFO0COUNT \n"                                                        
-//      "  LBBO r14, r1, 0, 4 \n"                                           
-//      "  AND r14, r14, (1 << 7) - 1 \n"                                  
-//      "  QBEQ ADC_WAIT_DATA, r14, 0 \n"                                  
-//      "  LDI32 r1, 0x44e0d100 \n" //ADC_MIO_ADDR + ADC_REG_FIFO0DATA \n"     
-//      "  LBBO &r14, r1, 0, 16 \n"                                            
-//      "  LDI32 r1, 0x00000fff \n"                                            
-//      "  AND r14, r14, r1 \n"                                                
-//      "  AND r15, r15, r1 \n"                                                
-//      "  AND r16, r16, r1 \n"                                                
-//      "  AND r17, r17, r1 \n"                                                
-//      "  JMP R3.w2 \n"                                                       
-//      );                                                                     
+   // We want a delay of abuot 100us (10kHz) between samples. Since
+   // the PRU runs at 200MHz (5ns per op), we want 20000 ops for
+   // an approximate delay of 100us.
 
+   WR_MAGIC( 0x0ADCDA8A );
 
-//    for(i=0;i<1000000;i++)
-//    { 
-       z[0] = adc_read(0, 0, 0);  
-       z[1] = adc_read1(0, 0, 0);
-       z[2] = adc_read2(0, 0, 0);
-       z[3] = adc_read3(0, 0, 0);
-//       z[1] = adc_read(0, 1, 0);  
-       for(j=0;j<10;j++);
-//    }
-//    z[1]= z[0] * 0.000439453125; // Result in Volt
-    shm_write_uint32(0, 0xdeadbeef);
-//    shm_write_uint32(4, 0x2b2b2c2d);
-//    shm_write_float(8, x);
-//    shm_write_float(12, y);
-    shm_write_uint32(12, 0xffffffff);
-    shm_write_uint32(16, z[0]);
-    shm_write_uint32(20, z[1]);
-    shm_write_uint32(24, z[2]);
-    shm_write_uint32(28, z[3]);
-//    shm_write_float(20, z[1]);
-//    shm_write_uint32(20, 0x12345678);
-//    shm_write_uint32(24, 0x23456789);
-//    shm_write_uint32(28, 0x34567890);
-//    z= 0.0;
+   WR_SEQNO( seqno );
+   while (1)
+   {
+      // Read ADC data into values
+      values[0] = adc_read( 0, 0, 0 );  
+      values[1] = adc_read1( 0, 0, 0 );
+      values[2] = adc_read2( 0, 0, 0 );
+      values[3] = adc_read3( 0, 0, 0 );
 
-  }
+      // Write into shared memory
+      for ( channel = 0; channel < NR_CHANNELS; ++channel ) {
+         WR_DATA( seqno, channel, count, values[channel] );
+      }
 
-  /* for (i = 0; i != 8; ++i) */
-  /* { */
-  /*   shm_write(i * 4, i); */
-  /* } */
+      // Increment and update sample counts
+      count++;
+      WR_COUNT( count );
 
-  __halt();
+      if ( count >= SAMPLES_PER_MSG ) {
+         count = 0;
+         seqno++;
 
-  return 0;
+         // XXX Signal to host that data is ready for reading
+         WR_SEQNO( seqno );
+
+      }
+
+      // Idle some until time for the next sample
+      for ( idle=0; idle < 1900; ++idle ) { seqno = seqno; };
+   }
+
+   __halt();
+
+   return 0;
 }
 

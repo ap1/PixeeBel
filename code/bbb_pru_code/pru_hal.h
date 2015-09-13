@@ -9,6 +9,7 @@ void ocp_init(void);
 
 void shm_init(void);
 void shm_write_uint32(register uint32_t, register uint32_t);
+void shm_write_uint16(register uint32_t, register uint32_t);
 void shm_write_float(register uint32_t, register float);
 uint32_t shm_read(register uint32_t);
 

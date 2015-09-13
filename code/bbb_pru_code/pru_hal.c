@@ -56,6 +56,17 @@ void shm_write_uint32(register uint32_t i, register uint32_t x)
   );
 }
 
+void shm_write_uint16(register uint32_t i, register uint32_t x)
+{
+  /* i is the absolute offset relative from shared memory start */
+  /* write x at shm + i */
+
+  __asm__ __volatile__
+  (
+   " SBCO &r15.w0, C28, r14.w0, 2 \n"
+  );
+}
+
 void shm_write_float(register uint32_t i, register float x)
 {
   __asm__ __volatile__

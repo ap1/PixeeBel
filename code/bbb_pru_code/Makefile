@@ -9,7 +9,7 @@ PRU_SDK_DIR=../pru_sdk
 PRU_CGT_DIR=../pru_2.0.0B2
 
 SCP_SRC=data.bin text.bin pru_main.asm pru_hal.asm START_ADDR
-SCP_DST=bbb:~/dev/pru_c_toolchain_demo/pru_sdk/example/pruss_c_adc
+SCP_DST=bbb:~/PixeeBel/code/bbb_host_code/
 
 pru_hal.obj: pru_hal.c
 	${PRU_CGT_DIR}/bin/clpru --silicon_version=2 --hardware_mac=on -i${PRU_CGT_DIR}/include -i${PRU_CGT_DIR}/lib -c -s pru_hal.c

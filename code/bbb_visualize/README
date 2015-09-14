@@ -1,0 +1,32 @@
+pb_visualize
+------------
+
+1. Requirements
+---------------
+
+1. Adafruit_GPIO
+   https://github.com/adafruit/Adafruit_Python_GPIO
+
+   Must be available at ./Adafruit_GPIO/.
+
+   (Has been included here for convenience)
+
+2. Adafruit_Nokia_LCD
+   https://github.com/adafruit/Adafruit_Nokia_LCD
+
+   Must be available at ./Adafruit_Nokia_LCD/.
+
+   (Has been included here for convenience)
+
+3. python-imaging
+   sudo apt-get install python-imaging
+
+
+2. Installation
+---------------
+
+(Run as root)
+
+# ./run.sh
+
+

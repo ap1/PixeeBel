@@ -1,0 +1,27 @@
+Nokia LCD Screen to Beaglebone Black
+------------------------------------
+
+LCD               Beaglebone Black
+---               ----------------
+GND   PIN1        P9_2    GND
+VCC   PIN2        P9_4    3.3V
+CLK   PIN3        P9_22
+DIN   PIN4        P9_18
+D/C   PIN5        P9_15
+CS    PIN6        P9_17
+RST   PIN7        P9_12
+
+
+
+Audio Amplifier to Beaglebone Black
+-----------------------------------
+
+Audio Out         Beaglebone Black
+---------         ----------------
+VCC 5V            P9_5
+GND               P9_45
+OUT0              P9_39
+OUT1              P9_40
+OUT2              P9_37
+OUT3              P9_38
+

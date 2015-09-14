@@ -1,0 +1,15 @@
+PI calculation to estimate the FFT benchmarks
+nfft= 256
+radix= 1000000
+error_margin= 0.0461542
+calculating 1536 digits of PI...
+AGM iteration
+precision= 48
+precision= 96
+precision= 168
+precision= 360
+precision= 696
+precision= 1392
+precision= 2784
+floating point operation: 819200 op.
+execution time: 0 sec. (real time)

@@ -3,6 +3,7 @@
 *.tgz
 *.pyc
 *.zip
+*.o
 
 libreader.so
 
@@ -10,3 +11,19 @@ code/capture/cap
 code/capture/reader
 code/bin/cap
 code/bin/reader
+
+code/bbb_analytics/drain
+code/bbb_analytics/sender
+
+code/bbb_analytics/bin_recognizer
+code/bbb_analytics/pb_analyzer
+code/fft/sample1/test4g
+code/fft/sample1/test4g_h
+code/fft/sample1/test8g
+code/fft/sample1/test8g_h
+code/fft/sample1/testsg
+code/fft/sample1/testsg_h
+code/fft/sample2/pi_fft4g
+code/fft/sample2/pi_fft8g
+code/fft/sample2/pi_fftsg
+

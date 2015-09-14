@@ -6,7 +6,6 @@
 int
 main(int argc, char *argv[])
 {
-   int i;
    int qid;
 
    qid = mg_open( "/tmp/pb_msgqueue" );
@@ -14,7 +13,7 @@ main(int argc, char *argv[])
    printf("qid %d\n", qid);
 
    while ( 1 ) {
-      i = mg_drain( qid, MG_TYPE );
+      mg_drain( qid, MG_TYPE );
    }
 
    mg_release( qid );

@@ -1,4 +1,4 @@
-all: sender drain
+all: sender drain pb_analyzer
 
 CFLAGS=-ggdb -Wall -I../bbb_common/
 
@@ -11,6 +11,12 @@ sender: sender.c $(COMMON_SOURCES) $(COMMON_HEADERS)
 drain: drain.c $(COMMON_SOURCES) $(COMMON_HEADERS)
 	gcc $(CFLAGS) -o drain drain.c $(COMMON_SOURCES)
 
+analyze.o: analyze.c
+	gcc $(CFLAGS) -c analyze.c
+
+pb_analyzer: pb_analyzer.c $(COMMON_SOURCES) $(COMMON_HEADERS) analyze.o
+	gcc $(CFLAGS) -o pb_analyzer pb_analyzer.c analyze.o $(COMMON_SOURCES)
+
 clean:
-	rm -f sender drain
+	rm -f sender drain pb_analyzer analyze.o
 

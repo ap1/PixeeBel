@@ -73,11 +73,11 @@ read_header( struct header *hp )
 static int
 read_channel_data( struct header *hp, msg *m )
 {
-	static const size_t sharedram_offset = 2048;
-   size_t data_offset = sizeof( struct header ) + ( ( hp->seqno - 1 ) % 2 ) * MSG_DATA_SIZE;
-	volatile uint32_t* p;
+	static const size_t sharedram_offset = 2048 * 4;
+	size_t data_offset = sizeof( struct header ) + ( ( hp->seqno - 1 ) % 2 ) * MSG_DATA_SIZE;
+	volatile char *p;
 
-	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
+	prussdrv_map_prumem( PRUSS0_SHARED_DATARAM, (void**)&p );
 
    m->mtype = MG_TYPE;
    memcpy( &m->data, &p[sharedram_offset + data_offset], MSG_DATA_SIZE );
@@ -86,25 +86,8 @@ read_channel_data( struct header *hp, msg *m )
 }
 
 
-/*
-static int read_words(uint32_t* x, size_t n)
-{
-	static const size_t sharedram_offset = 2048;
-	volatile uint32_t* p;
-	size_t i;
-
-	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
-
-	for (i = 0; i != 8; ++i) x[i] = p[sharedram_offset + i];
-
-	return 0;
-}
-*/
-
-
-/* sigint handler */
-
 static volatile unsigned int is_sigint = 0;
+
 
 static void on_sigint(int x)
 {
@@ -253,7 +236,7 @@ main( int argc, char *argv[] )
 	prussdrv_load_datafile( PRU_NUM, "./data.bin" );
 	prussdrv_exec_program_at( PRU_NUM, "./text.bin", START_ADDR );
 
-	signal(SIGINT, on_sigint);
+	signal( SIGINT, on_sigint );
 
 	while (is_sigint == 0) {
       prussdrv_pru_wait_event( PRU_EVTOUT_0 );
@@ -261,9 +244,8 @@ main( int argc, char *argv[] )
 
       read_header( &hdr );
 
-      printf( "%x %d %d\n", hdr.magic, hdr.seqno, hdr.count );
-
       read_channel_data( &hdr, &m );
+
       mg_send( qid, &m );
 	}
 

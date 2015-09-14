@@ -4,11 +4,13 @@ import socket
 import struct
 import time
 import select
+import screen
 
-import pb_bin_reader
 
-visibleMs = 200
+NR_CHANNELS = 4
+visibleMs = 500
 selectMs = 60
+
 
 # Each queue element is tuple with ( time-to-vanish, channel-id, bin-id )
 queue = []
@@ -31,14 +33,6 @@ def evalSelectDelay( nowMs ):
    return deltaMs / 1000.0
 
 
-def show( nowMs, channelId, binId ):
-   print "+%d:\tcid %d bid %d\t\tqlen %d" % ( nowMs, channelId, binId, len( queue ) )
-
-
-def hide( nowMs, channelId, binId ):
-   print "-%d:\tcid %d bid %d\t\tqlen %d" % ( nowMs, channelId, binId, len( queue ) )
-
-
 def maybeDrainList( nowMs ):
 
    if not queue:
@@ -47,16 +41,17 @@ def maybeDrainList( nowMs ):
    while queue and queue[-1][0] <= nowMs:
       # pop the last item
       ( _, channelId, binId ) = queue.pop()
-      hide( nowMs, channelId, binId )
+      screen.hide( nowMs, channelId, binId )
 
 
 if __name__ == "__main__":
 
-   bins = pb_bin_reader.load( "../bbb_common/bin_defs.txt" )
-   print bins
+   # edges = dict( ( channel, ScreenEdge( channel ) ) for channel in xrange( NR_CHANNELS ) )
 
    sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
    sock.bind( bind_port )
+
+   screen.init()
 
    while True:
       nowMs = millis()
@@ -74,9 +69,7 @@ if __name__ == "__main__":
       channelId = struct.unpack( "!H", data[2:4] )[0]
 
       queue.insert( 0, ( nowMs + visibleMs, channelId, binId ) )
-      show( nowMs, channelId, binId )
+      screen.show( nowMs, channelId, binId )
 
       maybeDrainList( nowMs )
-
-   exit( 0 )
 

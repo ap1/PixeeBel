@@ -81,6 +81,8 @@ bins_load( char *filename, bin *bins )
               bins[nr_bins].threshold );
 #endif
 
+      bins[nr_bins].id = nr_bins;
+
       nr_bins++;
    }
 

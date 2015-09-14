@@ -1,6 +1,8 @@
-all: sender drain pb_analyzer
+all: sender drain pb_analyzer bin_recognizer
 
 CFLAGS=-ggdb -Wall -I../bbb_common/
+
+OFLAGS = -O2
 
 COMMON_SOURCES=../bbb_common/msg_queue.c
 COMMON_HEADERS=../bbb_common/msg_queue.h ../bbb_common/pb_msg.h
@@ -17,6 +19,12 @@ analyze.o: analyze.c
 pb_analyzer: pb_analyzer.c $(COMMON_SOURCES) $(COMMON_HEADERS) analyze.o
 	gcc $(CFLAGS) -o pb_analyzer pb_analyzer.c analyze.o $(COMMON_SOURCES)
 
+fft4g_h.o: ../fft/fft4g_h.c
+	$(CC) $(CFLAGS) $(OFLAGS) -c ../fft/fft4g_h.c -o fft4g_h.o
+
+bin_recognizer: fft4g_h.o bin_recognizer.c
+	gcc $(CFLAGS) -lm -o bin_recognizer bin_recognizer.c fft4g_h.o
+
 clean:
-	rm -f sender drain pb_analyzer analyze.o
+	rm -f sender drain pb_analyzer analyze.o fft4g_h.o bin_recognizer
 

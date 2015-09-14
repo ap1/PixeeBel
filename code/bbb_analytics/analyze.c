@@ -26,6 +26,11 @@ float channels[NR_CHANNELS][SAMPLES_PER_MSG];
             for ( i = 0; i < len; ++i ) { out[i] = in[i]; } \
          } while ( 0 )
 
+#define TO_DOUBLE( len, in, out ) do { \
+            register unsigned int i; \
+            for ( i = 0; i < len; ++i ) { out[i] = in[i]; } \
+         } while ( 0 )
+
 #ifdef DEBUG
 int fds[NR_CHANNELS] = { -1, -1, -1, -1 };
 #endif

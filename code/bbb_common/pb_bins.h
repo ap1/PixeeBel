@@ -11,7 +11,7 @@ typedef struct bin_ {
    uint16_t  freq_low;
    uint16_t  freq_high;
 
-   uint16_t  threshold;
+   float  threshold;
    char    name[32];
 } bin;
 

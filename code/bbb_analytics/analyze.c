@@ -26,7 +26,9 @@ float channels[NR_CHANNELS][SAMPLES_PER_MSG];
             for ( i = 0; i < len; ++i ) { out[i] = in[i]; } \
          } while ( 0 )
 
+#ifdef DEBUG
 int fds[NR_CHANNELS] = { -1, -1, -1, -1 };
+#endif
 
 void
 stage1( SAMPLE *samples, float *floats )
@@ -41,8 +43,6 @@ stage1( SAMPLE *samples, float *floats )
    TO_FLOAT( SAMPLES_PER_MSG, samples, floats );
 
    ADD_SCALAR( SAMPLES_PER_MSG, floats, -avg );
-
-   printf( "%f ", avg );
 }
 
 
@@ -50,21 +50,27 @@ void
 do_magic( msg *m )
 {
    unsigned int channel;
-   char buf[32];
 
+#ifdef DEBUG
+   char buf[32];
    if ( fds[0] == -1 ) {
       for ( channel=0; channel < NR_CHANNELS; ++channel ) {
          sprintf( buf, "mic%d.txt", channel );
          fds[channel] = open( buf, O_RDWR | O_CREAT | O_TRUNC );
       }
    }
+#endif
 
    for ( channel = 0; channel < NR_CHANNELS; ++channel ) {
       // Operate on input m->data[channel] and write the result
       // as floats in channels[channel]
       stage1( m->data[channel], channels[channel] );
+
+#ifdef DEBUG
       sprintf( buf, "%f\n", channels[channel][SAMPLES_PER_MSG - 1] );
       write( fds[channel], buf, strlen( buf ) );
+#endif
    }
+
 }
 

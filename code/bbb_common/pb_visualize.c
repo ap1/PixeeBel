@@ -35,9 +35,11 @@ visualize_send( uint16_t id, uint16_t channel )
    int res;
    assert( sd != -1 );
 
-   uint32_t data = htons( id );
+   uint32_t data = id;
    data = data << 16;
-   data |= htons( channel );
+   data |= channel;
+
+   data = htonl( data );
 
    res = sendto( sd, &data, sizeof( data ), 0, (struct sockaddr *) &s_other, slen );
    assert( res == sizeof( data ) );

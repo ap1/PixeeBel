@@ -20,9 +20,9 @@ BIN_FILES := $(P_FILES:.p=.bin)
 O_FILES := $(C_FILES:.c=.o)
 DTBO_FILES := $(DTS_FILES:.dts=.dtbo)
 
-all:	main $(BIN_FILES) $(DTBO_FILES)
+all:	host_main $(BIN_FILES) $(DTBO_FILES)
 
-main:	$(O_FILES)
+host_main: $(O_FILES)
 	$(LD) -static -o $@ $(O_FILES) $(L_FLAGS) $(L_LIBS)
 	$(STRIP) $@
 
@@ -37,7 +37,7 @@ main:	$(O_FILES)
 
 .PHONY	: clean all
 clean:
-	rm -f $(O_FILES) $(BIN_FILES) $(DTBO_FILES) main
+	rm -f $(O_FILES) $(BIN_FILES) $(DTBO_FILES) host_main
 
 cleanall: clean
 	rm -f data.bin text.bin START_ADDR pru_main.asm pru_hal.asm

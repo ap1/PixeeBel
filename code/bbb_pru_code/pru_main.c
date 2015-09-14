@@ -3,9 +3,6 @@
 #include "pru_hal.h"
 #include "../bbb_common/pb_msg.h"
 
-/* TODO
-   1. signaling to host
-*/
 
 /* Shared memory layout is the following
 
@@ -58,12 +55,13 @@ The host code should read the buffer not being written actively.
 #define WR_SEQNO( seqno )      shm_write_uint16( 4, (seqno) )
 #define WR_COUNT( count )      shm_write_uint16( 6, (count) )
 
+#define MEM_OFFSET( seqno, channel, count )     \
+             sizeof(struct header ) + ( ((seqno) % 2) * MSG_DATA_SIZE ) + \
+             ( (channel) * SAMPLES_PER_MSG * sizeof(SAMPLE) ) + \
+             ( count ) * sizeof(SAMPLE)
+
 #define WR_DATA( seqno, channel, count, data )      \
-             shm_write_uint16( sizeof(struct header) + \
-                               ( (seqno % 2) * NR_CHANNELS * SAMPLES_PER_MSG * sizeof(SAMPLE) ) + \
-                               ( (channel) * SAMPLES_PER_MSG * sizeof(SAMPLE) ) + \
-                               ( count ) * sizeof(SAMPLE), \
-                               ( data ) )
+             shm_write_uint16( MEM_OFFSET( (seqno), (channel), (count) ), (data) )
 
 int main(void)
 {

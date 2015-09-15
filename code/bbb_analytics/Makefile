@@ -28,8 +28,11 @@ bin_reader.o: ../bbb_common/bin_reader.c ../bbb_common/bin_reader.h
 msg_queue.o: ../bbb_common/msg_queue.c ../bbb_common/msg_queue.h
 	gcc $(CFLAGS) -c ../bbb_common/msg_queue.c
 
-bin_recognizer: fft4g_h.o bin_recognizer.c bin_reader.o msg_queue.o
-	gcc $(CFLAGS) -lm -o bin_recognizer bin_recognizer.c fft4g_h.o bin_reader.o msg_queue.o
+pb_visualize.o: ../bbb_common/pb_visualize.c ../bbb_common/pb_visualize.h
+	gcc $(CFLAGS) -c ../bbb_common/pb_visualize.c
+
+bin_recognizer: fft4g_h.o bin_recognizer.c bin_reader.o msg_queue.o pb_visualize.o
+	gcc $(CFLAGS) -lm -o bin_recognizer bin_recognizer.c fft4g_h.o bin_reader.o msg_queue.o pb_visualize.o
 
 clean:
 	rm -f sender drain pb_analyzer analyze.o fft4g_h.o bin_recognizer

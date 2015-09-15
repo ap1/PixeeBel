@@ -1,5 +1,8 @@
 # binname    freq_low   freq_high     threshold
-SIREN1       256       480            3
-SIREN2       400       512            3
-SIREN3       512       800            3
-SIREN4       800       1600           3
+SIREN1       100       250            3
+SIREN2       250       500            3
+SIREN3       500       1000            3
+SIREN4       1000      1500           3
+SIREN5       1500      3000            3
+SIREN6       3000      5000           3
+SIREN7       5000      8000            3

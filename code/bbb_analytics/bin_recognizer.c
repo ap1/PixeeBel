@@ -5,20 +5,23 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "msg_queue.h"
 #include "pb_msg.h"
 #include "pb_bins.h"
 #include "bin_reader.h"
+#include "pb_visualize.h"
 
 #define NMAX (SAMPLES_PER_MSG)
 #define SAMPLE_T 0.0001 // assuming 10 KHz sampling
 #define __DEB                    {printf("Reached %s (%d)\n",__FILE__,__LINE__);}
 #define MAXBINS 64
+#define NR_ACTIVE_CHANNELS 3
 
-double channels[NR_CHANNELS][NMAX * 2];
-double running_sum[NR_CHANNELS];
-double running_sqr_sum[NR_CHANNELS];
+double channels[NR_ACTIVE_CHANNELS][NMAX * 2];
+double running_sum[NR_ACTIVE_CHANNELS];
+double running_sqr_sum[NR_ACTIVE_CHANNELS];
 double running_count;
 
 // -- random number generator, 0 <= RND < 1 -- //
@@ -36,7 +39,7 @@ void generate_array(double* arr, int n);            // n-random values
 void to_complex(double* arr, int n_real);           // replace v0,v1,v2,v3... with v0,0,v1,0,v2,0...
 void complex_magnitude(double *arr, int n_real);    // get n_real real abs values from 2*n_real complex values
 void fftfreq(double* arr, int n, float d);
-void analyze_bin(double* mags, double* freqs, int n, bin* bins, int n_bins);
+void analyze_bin(double* mags, double* freqs, int n, bin* bins, int n_bins, double* bin_energies);
 void analyze_msg(msg* m, double* freqs, bin* bins, int nbins);
 void initialize_running_sums();
 
@@ -47,38 +50,57 @@ int main()
     bin bins[MAXBINS];
     int nbins;
     int qid;
+    int msg_count;
+    double time_elapsed;
+    struct timeval start_time, cur_time;
+    int active_channel;
     msg m;
 
+    printf("[init]\n");
+
+    printf(" - opening message queue\n");
     qid = mg_open( "/tmp/pb_msgqueue" );
+    printf(" - qid %d\n", qid);
 
-    printf("qid %d\n", qid);
-
-    printf( "Draining pending data\n" );
+    printf(" - draining old data\n");
     mg_drain( qid, MG_TYPE );
-    printf( "   done\n" );
+    printf(" - done\n" );
 
     // allocate array
+    printf(" - array allocations\n");
     arr     = (double*)malloc(NMAX * 2 * sizeof(double));
     freqs   = (double*)malloc(NMAX     * sizeof(double));
 
-    //generate_array(arr, NMAX);
-
-    // put_zeros(arr, NMAX);
-    // arr[0] = 1.0;
-
-    //put_values(arr, NMAX, 1.0);
-    
-    // // print_array(arr, NMAX);
-
+    printf(" - other initializations\n");
     initialize_running_sums();
-
     fftfreq(freqs, NMAX, SAMPLE_T);
-
+    visualize_init();
     nbins = bins_load("../bbb_common/bin_defs.txt", bins);
+
+    printf("[main loop]\n");
+    gettimeofday(&start_time, NULL);
+    msg_count = 0;
+
+    active_channel = 0;
 
     while((mg_recv( qid, MG_TYPE, &m ) > 0))
     {
         analyze_msg(&m, freqs, bins, nbins);
+        if(msg_count % 100 == 0 && msg_count >= 100)
+        {
+            gettimeofday(&cur_time, NULL);
+            time_elapsed = 
+                (double)(cur_time.tv_sec  - start_time.tv_sec) + 
+                (double)(cur_time.tv_usec - start_time.tv_usec) * 0.000001;
+            printf(" - current rate: %0.2f samples / sec\n", 256.0 * ((double)msg_count)/(double)time_elapsed);
+
+            // active_channel = (active_channel + 1) % NR_ACTIVE_CHANNELS;
+            // visualize_send( 0, active_channel );
+            // visualize_send( 1, active_channel );
+            // visualize_send( 2, active_channel );
+            // visualize_send( 3, active_channel );
+        }
+        msg_count++;
     }
 
     free(arr);
@@ -154,14 +176,12 @@ void fftfreq(double* arr, int n, float d)
     }
 }
 
-void analyze_bin(double* mags, double* freqs, int n, bin* bins, int n_bins)
+void analyze_bin(double* mags, double* freqs, int n, bin* bins, int n_bins, double* bin_energies)
 {
     // -- for the bin, find if peak exists and energy in the bin -- //
     int j, k, n_valid_freqs;
-    double *bin_energies;
     double *bin_counts;
 
-    bin_energies = (double*) malloc(n_bins * sizeof(double));
     bin_counts = (double*) malloc(n_bins * sizeof(double));
 
     n_valid_freqs = ((n % 2) == 0) ? (n/2) : (1 + (n-1)/2);
@@ -188,21 +208,9 @@ void analyze_bin(double* mags, double* freqs, int n, bin* bins, int n_bins)
 
     for(k = 0; k < n_bins; k++)
     {
-        if(bin_counts[k] > 0.0)
-        {
-            bin_energies[k] = sqrt(bin_energies[k] * (1.0 / bin_counts[k]));
-        }
-        else
-        {
-            bin_energies[k] = 0.0;
-        }
-        //printf("bin %d to %d energy is %f\n", bins[k].freq_low, bins[k].freq_high, bin_energies[k]);
-        printf(" %0.2f", bin_energies[k]);
+        if(bin_counts[k] > 0.0) bin_energies[k] = sqrt(bin_energies[k] * (1.0 / bin_counts[k]));
+        else                    bin_energies[k] = 0.0;
     }
-    printf(" | ");
-    
-
-    free(bin_energies);
     free(bin_counts);
 }
 
@@ -228,7 +236,7 @@ void remove_dc_component(double* data, int n, double meanvalue, double stdev)
 void initialize_running_sums()
 {
     int j;
-    for(j = 0; j < NR_CHANNELS; j++)
+    for(j = 0; j < NR_ACTIVE_CHANNELS; j++)
     {
         running_sum[j] = 0.0;
         running_sqr_sum[j] = 0.0;
@@ -242,7 +250,7 @@ void update_running_sums(double* avgs, double* stdevs)
 
     for(j = 0; j < NMAX; j++)
     {
-        for(c = 0; c < NR_CHANNELS; c++)
+        for(c = 0; c < NR_ACTIVE_CHANNELS; c++)
         {
             running_sum[c]      += channels[c][j];
             running_sqr_sum[c]  += (channels[c][j] * channels[c][j]);
@@ -250,7 +258,7 @@ void update_running_sums(double* avgs, double* stdevs)
         running_count += 1.0;
     }
 
-    for(c = 0; c < NR_CHANNELS; c++)
+    for(c = 0; c < NR_ACTIVE_CHANNELS; c++)
     {
         avgs[c] = (running_sum[c] / running_count);
         stdevs[c] = sqrt((running_sqr_sum[c] / running_count) - avgs[c] * avgs[c]);
@@ -265,28 +273,62 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
     double avgs[4];
     double stdevs[4];
     double* curChannel;
-    //printf ("-------\n");
-    printf("analyzing %d bins: ", nbins);
-    for (chId = 0; chId < NR_CHANNELS; ++chId)
+    double* bin_energies;
+    double* max_energies;
+    int k;
+
+    bin_energies = (double*) malloc(nbins * NR_ACTIVE_CHANNELS * sizeof(double));
+    max_energies = (double*) malloc(nbins *                  1 * sizeof(double));
+
+    // -- fetch channel data -- //
+    for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
     {
         to_double(m->data[chId], channels[chId], NMAX);
     }
+
     update_running_sums(avgs, stdevs);
-    for (chId = 0; chId < NR_CHANNELS; ++chId)
+
+    // -- analyze channel data -- //
+    for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
     {
-        
-        //printf("%0.2f, %0.2f | ", avgs[chId], stdevs[chId]);
-        
-        //print_array(channels[chId], 16);
         remove_dc_component(channels[chId], NMAX, avgs[chId], stdevs[chId]);
-
-        //print_array(channels[chId], 16);
-
         to_complex(channels[chId], NMAX);
-        //print_array(channels[chId], 16);
         cdft(NMAX * 2, -1, channels[chId]); // -1 for some reason matches python/numpy
         complex_magnitude(channels[chId], NMAX);
-        analyze_bin(channels[chId], freqs, NMAX, bins, nbins);
+        analyze_bin(channels[chId], freqs, NMAX, bins, nbins, &(bin_energies[chId * NR_ACTIVE_CHANNELS]));
+    }
+
+    // -- display information -- //
+
+    for(k = 0; k < nbins; k++)
+    {
+        int best_channel = 0;
+        max_energies[k] = 0.0;
+        for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
+        {
+            double cur_bin_energy = bin_energies[chId * NR_ACTIVE_CHANNELS + k];
+
+            if(cur_bin_energy > max_energies[k])
+            {
+                max_energies[k] = cur_bin_energy;
+                best_channel = chId;
+            }
+            //printf(" %s", bin_energies[chId * NR_ACTIVE_CHANNELS + k] >= 20.0 ? "#": " ");
+            //printf(" %3.0f", bin_energies[chId * NR_ACTIVE_CHANNELS + k]);
+        }
+        //printf(" | ");
+
+        if(max_energies[k] >= 20.0)
+        {
+            visualize_send( k, best_channel );
+            printf("%d ", best_channel);
+        }else
+        {
+            printf("  ");
+        }
     }
     printf("\n");
+
+    free(bin_energies);
+    free(max_energies);
 }

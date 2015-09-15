@@ -28,6 +28,8 @@ edgeByChannelId = { 0: "f",
 bins = None
 display = None
 
+FGCOLOR = 1
+BGCOLOR = 0
 
 min_bin_freq = MAX_FREQ
 max_bin_freq = 0
@@ -40,17 +42,22 @@ class Display( object ):
       self.disp = LCD.PCD8544( DC, RST, spi=spi )
       self.disp.begin( contrast=50 )
 
-      self.disp.clear()
-
       # '1' is for 1-bit color
       self.image = Image.new( '1', ( LCD.LCDWIDTH, LCD.LCDHEIGHT ) )
       self.draw = ImageDraw.Draw( self.image )
 
+      self.disp.clear()
+
       self.barLength = min( LCD.LCDHEIGHT, LCD.LCDHEIGHT )
       self.k_flat = self.barLength / math.log( MAX_FREQ )
+      self.k_linear_stretch = float( self.barLength ) / ( max_bin_freq - min_bin_freq )
+      self.k_flat2 = self.barLength / math.log( max_bin_freq - min_bin_freq + 1 )
       self.k_stretch = self.barLength / math.log( max_bin_freq / min_bin_freq )
 
    def clear( self ):
+      for row in range( 0, LCD.LCDHEIGHT ):
+         self.draw.line( ( 0, LCD.LCDWIDTH, row, row ), fill=FGCOLOR )
+
       self.disp.clear()
       self.disp.display()
 
@@ -67,11 +74,17 @@ class Display( object ):
       def COORD_FLAT( freq ):
          return math.log( freq ) * self.k_flat
 
+      def COORD_LINEAR_STRETCH( freq ):
+         return ( freq - min_bin_freq ) * self.k_linear_stretch
+
+      def COORD_FLAT2( freq ):
+         return math.log( freq - min_bin_freq + 1 ) * self.k_flat2
+
       def COORD_STRETCH( freq ):
          return math.log( freq / min_bin_freq ) * self.k_stretch
 
       def COORD( freq ):
-         return COORD_STRETCH( freq )
+         return COORD_LINEAR_STRETCH( freq )
 
       if edge in "fb":
          offset_x = ( LCD.LCDWIDTH - self.barLength ) / 2
@@ -92,12 +105,12 @@ class Display( object ):
 
    def show( self, edge, binId ):
       coords = self.coords( edge, binId )
-      self.draw.line( coords, fill=1 )
+      self.draw.line( coords, fill=FGCOLOR )
       self.refresh()
      
    def hide( self, edge, binId ):
       coords = self.coords( edge, binId )
-      self.draw.line( coords, fill=0 )
+      self.draw.line( coords, fill=BGCOLOR )
       self.refresh()
 
 

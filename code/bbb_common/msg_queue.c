@@ -73,7 +73,7 @@ mg_recv( int qid, long msgtyp, msg *m )
    int bytes;
    bytes = msgrcv( qid, m, MSG_DATA_SIZE, msgtyp, 0 );
 
-   printf( "read (%d) msg received %d\n", bytes, m->data[0][1] );
+   //printf( "read (%d) msg received %d\n", bytes, m->data[0][1] );
 
    return bytes;
 }

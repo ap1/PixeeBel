@@ -43,9 +43,9 @@ visualize_send( uint16_t id, uint16_t channel, uint16_t mag )
 
    assert( sd != -1 );
 
-   m.bid = id;
-   m.cid = channel;
-   m.mag = mag;
+   m.bid = htons( id );
+   m.cid = htons( channel );
+   m.mag = htons( mag );
 
    res = sendto( sd, &m, sizeof( m ), 0, (struct sockaddr *) &s_other, slen );
    assert( res == sizeof( m ) );

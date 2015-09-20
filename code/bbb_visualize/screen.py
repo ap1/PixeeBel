@@ -12,6 +12,7 @@ from PIL import ImageFont
 
 import pb_bin_reader
 
+MAX_UINT = 65535
 
 DC = 'P9_15'
 RST = 'P9_12'
@@ -184,8 +185,8 @@ class MagDisplay( Display ):
    def __init__( self, min_bin_freq, max_bin_freq ):
       Display.__init__( self, min_bin_freq, max_bin_freq )
 
-   def drawRectangle( self, edge, coords, fill ):
-      depth = len( bins )
+   def drawMag( self, edge, coords, mag, fill ):
+      depth = mag * len( bins ) / MAX_UINT
 
       if edge == "f":
          coords[ 1 ] = 0
@@ -200,20 +201,21 @@ class MagDisplay( Display ):
          coords[0] = 0
          coords[2] = depth
 
-      self.draw.rectangle( coords, fill=fill )
+#      self.draw.rectangle( coords, fill=fill )
+      self.draw.line( coords, fill=fill )
 
    def show( self, edge, binId, mag, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
-      self.drawRectangle( edge, coords, fill=FGCOLOR )
+      self.drawMag( edge, coords, mag, fill=FGCOLOR )
       self.refresh()
      
    def hide( self, edge, binId, mag, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
-      self.drawRectangle( edge, coords, fill=BGCOLOR )
+      self.drawMag( edge, coords, mag, fill=BGCOLOR )
 
-      for i in [ q for q in queue if edgeByChannelId[ q[2] ] == edge ]:
-         coords = self.coords( edge, q[1], coord=self.COORD_LINEAR_STRETCH )
-         self.drawRectangle( edge, coords, fill=FGCOLOR )
+#      for i in [ q for q in queue if edgeByChannelId[ q[2] ] == edge ]:
+#         coords = self.coords( edge, q[1], coord=self.COORD_LINEAR_STRETCH )
+#         self.drawRectangle( edge, coords, fill=FGCOLOR )
 
       self.refresh()
 

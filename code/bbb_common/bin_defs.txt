@@ -1,5 +1,5 @@
 # binname    freq_low   freq_high     threshold
-SIREN1  0   250 3
+SIREN1  1   250 3
 SIREN2  250 500 3
 SIREN3  500 750 3
 SIREN4  750 1000    3

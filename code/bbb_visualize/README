@@ -27,6 +27,5 @@ pb_visualize
 
 (Run as root)
 
-# ./run.sh
-
+# ./run_visualize.sh
 

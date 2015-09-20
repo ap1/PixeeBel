@@ -8,7 +8,7 @@
 
 void visualize_init();
 
-void visualize_send( uint16_t id, uint16_t channel );
+void visualize_send( uint16_t id, uint16_t channel, uint16_t mag );
 
 #endif // __VISUALIZE_H
 

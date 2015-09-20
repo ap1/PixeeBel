@@ -19,7 +19,7 @@ int main( int argc, char *argv[] )
    while ( 1 ) {
 
       for ( i = 0; i < nr_bins; i++ ) {
-         visualize_send( i, channel );
+         visualize_send( i, channel, 3 );
 
          sleep( 1 );
       }

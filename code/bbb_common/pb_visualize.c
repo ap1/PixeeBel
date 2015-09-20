@@ -10,6 +10,12 @@ int sd = -1;
 struct sockaddr_in s_other;
 unsigned int slen;
 
+typedef struct udp_msg_ {
+   uint16_t bid;
+   uint16_t cid;
+   uint16_t mag;
+} udp_msg;
+
 void
 visualize_init()
 {
@@ -30,18 +36,18 @@ visualize_init()
 
 
 void
-visualize_send( uint16_t id, uint16_t channel )
+visualize_send( uint16_t id, uint16_t channel, uint16_t mag )
 {
    int res;
+   udp_msg m;
+
    assert( sd != -1 );
 
-   uint32_t data = id;
-   data = data << 16;
-   data |= channel;
+   m.bid = id;
+   m.cid = channel;
+   m.mag = mag;
 
-   data = htonl( data );
-
-   res = sendto( sd, &data, sizeof( data ), 0, (struct sockaddr *) &s_other, slen );
-   assert( res == sizeof( data ) );
+   res = sendto( sd, &m, sizeof( m ), 0, (struct sockaddr *) &s_other, slen );
+   assert( res == sizeof( m ) );
 }
 

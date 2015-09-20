@@ -5,6 +5,8 @@ import struct
 import time
 import select
 import screen
+import signal
+import sys
 
 
 NR_CHANNELS = 4
@@ -15,6 +17,15 @@ selectMs = 60
 # Each queue element is tuple with ( time-to-vanish, channel-id, bin-id )
 queue = []
 bind_port = ( '127.0.0.1', 3000 )
+
+interrupted = False
+
+
+# Control+C handler
+def sigint_handler( signal, frame ):
+   global interrupted
+   interrupted = True
+   print "SIGINT"
 
 
 def millis():
@@ -51,11 +62,23 @@ if __name__ == "__main__":
 
    screen.init()
 
-   while True:
+   signal.signal( signal.SIGINT, sigint_handler )
+
+   iter = 0
+
+   while not interrupted:
+      iter += 1
+
+      if iter % 100 == 0:
+         print "Queue length %d" % len( queue )
+
       nowMs = millis()
       timeout = evalSelectDelay( nowMs )
 
-      readReady, _, _ = select.select( [ sock ], [], [], timeout )
+      try:
+         readReady, _, _ = select.select( [ sock ], [], [], timeout )
+      except select.error:
+         continue
 
       if not readReady:
          maybeDrainList( nowMs )
@@ -71,3 +94,5 @@ if __name__ == "__main__":
 
       maybeDrainList( nowMs )
 
+   screen.stop()
+   sys.exit( 0 )

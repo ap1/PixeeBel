@@ -1,4 +1,5 @@
 
+import threading
 import time
 import math
 
@@ -24,7 +25,6 @@ edgeByChannelId = { 0: "f",
                     2: "l",
                     3: "b" }
 
-
 bins = None
 display = None
 
@@ -33,6 +33,21 @@ BGCOLOR = 0
 
 min_bin_freq = MAX_FREQ
 max_bin_freq = 0
+
+interrupted = False
+
+
+class DisplayThread( threading.Thread ):
+   def __init__( self, disp, image ):
+      threading.Thread.__init__( self )
+      self.disp = disp
+      self.image = image
+
+   def run( self ):
+      while not interrupted:
+         self.disp.image( self.image )
+         self.disp.display()
+         time.sleep( 0.050 )
 
 
 class Display( object ):
@@ -64,13 +79,20 @@ class Display( object ):
       self.disp.image( self.image )
       self.disp.display()
 
+      self.displayThread = DisplayThread( self.disp, self.image )
+      self.displayThread.start()
+
+   def stop( self ):
+      self.displayThread.join( 2 )
+
    def clear( self ):
       self.disp.clear()
       self.disp.display()
 
    def refresh( self ):
-      self.disp.image( self.image )
-      self.disp.display()
+#      self.disp.image( self.image )
+#      self.disp.display()
+      pass
 
    def COORD_FLAT( self, freq ):
       return math.log( freq ) * self.k_flat
@@ -180,28 +202,8 @@ def hide( nowMs, channelId, binId, queue=None ):
 #   print "-%d:\tedge %s bid %d" % ( nowMs, edge, binId )
    display.hide( edge, binId, queue=queue )
 
+def stop():
+   global interrupted
+   interrupted = True
+   display.stop()
 
-
-## Draw a white filled box to clear the image.
-#draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
-#
-## Draw some shapes.
-#draw.ellipse((2,2,22,22), outline=0, fill=255)
-#draw.rectangle((24,2,44,22), outline=0, fill=255)
-#draw.polygon([(46,22), (56,2), (66,22)], outline=0, fill=255)
-#draw.line((68,22,81,2), fill=0)
-#draw.line((68,2,81,22), fill=0)
-#
-## Load default font.
-#font = ImageFont.load_default()
-#
-## Alternatively load a TTF font.
-## Some nice fonts to try: http://www.dafont.com/bitmap.php
-## font = ImageFont.truetype('Minecraftia.ttf', 8)
-#
-## Write some text.
-#draw.text((8,30), 'Hello World!', font=font)
-#
-## Display image.
-#disp.image(image)
-#disp.display()

@@ -41,5 +41,5 @@ everything else that's needed.
 
 Run as root.
 
-  # ./run.sh
+  # ./run_host.sh
 

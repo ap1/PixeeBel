@@ -37,7 +37,7 @@ max_bin_freq = 0
 
 class Display( object ):
 
-   def __init__( self ):
+   def __init__( self, min_bin_freq, max_bin_freq ):
       spi = SPI.SpiDev( SPI_PORT, SPI_DEVICE, max_speed_hz=4000000 )
       self.disp = LCD.PCD8544( DC, RST, spi=spi )
       self.disp.begin( contrast=50 )
@@ -54,10 +54,17 @@ class Display( object ):
       self.k_flat2 = self.barLength / math.log( max_bin_freq - min_bin_freq + 1 )
       self.k_stretch = self.barLength / math.log( max_bin_freq / min_bin_freq )
 
-   def clear( self ):
-      for row in range( 0, LCD.LCDHEIGHT ):
-         self.draw.line( ( 0, LCD.LCDWIDTH, row, row ), fill=FGCOLOR )
+      self.min_bin_freq = min_bin_freq
+      self.max_bin_freq = max_bin_freq
 
+      font = ImageFont.load_default()
+      # font = ImageFont.truetype('Minecraftia.ttf', 8)
+      self.draw.text( ( 16, 20 ), 'Pixee el', font=font, fill=FGCOLOR )
+      self.draw.text( ( 46, 18 ), 'B', font=font, fill=FGCOLOR )
+      self.disp.image( self.image )
+      self.disp.display()
+
+   def clear( self ):
       self.disp.clear()
       self.disp.display()
 
@@ -65,52 +72,88 @@ class Display( object ):
       self.disp.image( self.image )
       self.disp.display()
 
-   def coords( self, edge, binId ):
+   def COORD_FLAT( self, freq ):
+      return math.log( freq ) * self.k_flat
+
+   def COORD_LINEAR_STRETCH( self, freq ):
+      return ( freq - self.min_bin_freq ) * self.k_linear_stretch
+
+   def COORD_FLAT2( self, freq ):
+      return math.log( freq - self.min_bin_freq + 1 ) * self.k_flat2
+
+   def COORD_STRETCH( self, freq ):
+      return math.log( freq / self.min_bin_freq ) * self.k_stretch
+
+   def coords( self, edge, binId, coord ):
       x1 = x2 = y1 = y2 = 0
 
       freq_low = bins[binId]['freq_low']
       freq_high = bins[binId]['freq_high']
 
-      def COORD_FLAT( freq ):
-         return math.log( freq ) * self.k_flat
-
-      def COORD_LINEAR_STRETCH( freq ):
-         return ( freq - min_bin_freq ) * self.k_linear_stretch
-
-      def COORD_FLAT2( freq ):
-         return math.log( freq - min_bin_freq + 1 ) * self.k_flat2
-
-      def COORD_STRETCH( freq ):
-         return math.log( freq / min_bin_freq ) * self.k_stretch
-
-      def COORD( freq ):
-         return COORD_LINEAR_STRETCH( freq )
-
       if edge in "fb":
          offset_x = ( LCD.LCDWIDTH - self.barLength ) / 2
 
-         x1 = offset_x + COORD( freq_low )
-         x2 = offset_x + COORD( freq_high )
+         x1 = offset_x + coord( freq_low )
+         x2 = offset_x + coord( freq_high )
 
          y1 = y2 = binId if edge == "f" else ( LCD.LCDHEIGHT - binId - 1 )
       else:
          offset_y = ( LCD.LCDHEIGHT - self.barLength ) / 2
 
-         y1 = offset_y + COORD( freq_low )
-         y2 = offset_y + COORD( freq_high )
+         y1 = offset_y + coord( freq_low )
+         y2 = offset_y + coord( freq_high )
 
          x1 = x2 = binId if edge == "l" else ( LCD.LCDWIDTH - binId - 1 )
 
-      return ( int( x1 ), int( y1 ), math.ceil( x2 ), math.ceil( y2 ) )
+      return [ int( x1 ), int( y1 ), math.ceil( x2 ), math.ceil( y2 ) ]
 
-   def show( self, edge, binId ):
-      coords = self.coords( edge, binId )
+   def show( self, edge, binId, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_STRETCH )
       self.draw.line( coords, fill=FGCOLOR )
       self.refresh()
      
-   def hide( self, edge, binId ):
-      coords = self.coords( edge, binId )
+   def hide( self, edge, binId, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_STRETCH )
       self.draw.line( coords, fill=BGCOLOR )
+      self.refresh()
+
+
+class RectDisplay( Display ):
+
+   def __init__( self, min_bin_freq, max_bin_freq ):
+      Display.__init__( self, min_bin_freq, max_bin_freq )
+
+   def drawRectangle( self, edge, coords, fill ):
+      depth = len( bins )
+
+      if edge == "f":
+         coords[ 1 ] = 0
+         coords[ 3 ] = depth
+      elif edge == "b":
+         coords[ 1 ] = LCD.LCDHEIGHT - 1 - depth
+         coords[ 3 ] = LCD.LCDHEIGHT - 1
+      elif edge == "r":
+         coords[ 0 ] = LCD.LCDWIDTH - 1 - depth
+         coords[ 2 ] = LCD.LCDWIDTH - 1
+      elif edge == "l":
+         coords[0] = 0
+         coords[2] = depth
+
+      self.draw.rectangle( coords, fill=fill )
+
+   def show( self, edge, binId, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
+      self.drawRectangle( edge, coords, fill=FGCOLOR )
+      self.refresh()
+     
+   def hide( self, edge, binId, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
+      self.drawRectangle( edge, coords, fill=BGCOLOR )
+
+      for i in [ q for q in queue if edgeByChannelId[ q[2] ] == edge ]:
+         coords = self.coords( edge, q[1], coord=self.COORD_LINEAR_STRETCH )
+         self.drawRectangle( edge, coords, fill=FGCOLOR )
+
       self.refresh()
 
 
@@ -124,22 +167,19 @@ def init():
       min_bin_freq = min( min_bin_freq, binValue["freq_low"] )
       max_bin_freq = max( max_bin_freq, binValue["freq_high"] )
 
-   display = Display()
+   display = Display( min_bin_freq, max_bin_freq )
 
 
-def show( nowMs, channelId, binId ):
+def show( nowMs, channelId, binId, queue=None ):
    edge = edgeByChannelId[ channelId ]
-   print "+%d:\tedge %s bid %d" % ( nowMs, edge, binId )
-   display.show( edge, binId )
+#   print "+%d:\tedge %s bid %d" % ( nowMs, edge, binId )
+   display.show( edge, binId, queue=queue )
 
-def hide( nowMs, channelId, binId ):
+def hide( nowMs, channelId, binId, queue=None ):
    edge = edgeByChannelId[ channelId ]
-   print "-%d:\tedge %s bid %d" % ( nowMs, edge, binId )
-   display.hide( edge, binId )
+#   print "-%d:\tedge %s bid %d" % ( nowMs, edge, binId )
+   display.hide( edge, binId, queue=queue )
 
-
-if __name__ == "__main__":
-   lcd_init()
 
 
 ## Draw a white filled box to clear the image.

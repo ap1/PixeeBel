@@ -213,6 +213,9 @@ main( int argc, char *argv[] )
 {
    // Buffer written into
    struct header hdr;
+#ifdef DEBUG
+   unsigned long nr_msgs = 0;
+#endif
    msg m;
 
    int qid;
@@ -247,6 +250,15 @@ main( int argc, char *argv[] )
       read_channel_data( &hdr, &m );
 
       mg_send( qid, &m );
+#ifdef DEBUG
+      nr_msgs++;
+#endif
+
+#ifdef DEBUG
+      if ( nr_msgs % 10 == 0 ) {
+         printf( "%u\n", nr_msgs );
+      }
+#endif
 	}
 
 	// Disable pru and close memory mapping

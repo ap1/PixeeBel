@@ -8,7 +8,7 @@ import screen
 
 
 NR_CHANNELS = 4
-visibleMs = 500
+visibleMs = 200
 selectMs = 60
 
 
@@ -28,7 +28,7 @@ def evalSelectDelay( nowMs ):
 
    nextEventTimeMs = queue[ -1 ][ 0 ]
 
-   deltaMs = max( nextEventTimeMs - nowMs, 0 )
+   deltaMs = max( min( nextEventTimeMs - nowMs, selectMs ), 0 )
 
    return deltaMs / 1000.0
 
@@ -41,12 +41,10 @@ def maybeDrainList( nowMs ):
    while queue and queue[-1][0] <= nowMs:
       # pop the last item
       ( _, channelId, binId ) = queue.pop()
-      screen.hide( nowMs, channelId, binId )
+      screen.hide( nowMs, channelId, binId, queue=queue )
 
 
 if __name__ == "__main__":
-
-   # edges = dict( ( channel, ScreenEdge( channel ) ) for channel in xrange( NR_CHANNELS ) )
 
    sock = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
    sock.bind( bind_port )
@@ -69,7 +67,7 @@ if __name__ == "__main__":
       channelId = struct.unpack( "!H", data[2:4] )[0]
 
       queue.insert( 0, ( nowMs + visibleMs, channelId, binId ) )
-      screen.show( nowMs, channelId, binId )
+      screen.show( nowMs, channelId, binId, queue=queue )
 
       maybeDrainList( nowMs )
 

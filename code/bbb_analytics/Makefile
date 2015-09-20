@@ -13,27 +13,27 @@ sender: sender.c $(COMMON_SOURCES) $(COMMON_HEADERS)
 drain: drain.c $(COMMON_SOURCES) $(COMMON_HEADERS)
 	gcc $(CFLAGS) -o drain drain.c $(COMMON_SOURCES)
 
-analyze.o: analyze.c
-	gcc $(CFLAGS) -c analyze.c
+obj/analyze.o: analyze.c
+	gcc $(CFLAGS) -c analyze.c -o obj/analyze.o
 
-pb_analyzer: pb_analyzer.c $(COMMON_SOURCES) $(COMMON_HEADERS) analyze.o
-	gcc $(CFLAGS) -o pb_analyzer pb_analyzer.c analyze.o $(COMMON_SOURCES)
+pb_analyzer: pb_analyzer.c $(COMMON_SOURCES) $(COMMON_HEADERS) obj/analyze.o
+	gcc $(CFLAGS) -o pb_analyzer pb_analyzer.c obj/analyze.o $(COMMON_SOURCES)
 
-fft4g_h.o: ../fft/fft4g_h.c
-	$(CC) $(CFLAGS) $(OFLAGS) -c ../fft/fft4g_h.c -o fft4g_h.o
+obj/fft4g_h.o: ../fft/fft4g_h.c
+	$(CC) $(CFLAGS) $(OFLAGS) -c ../fft/fft4g_h.c -o obj/fft4g_h.o
 
-bin_reader.o: ../bbb_common/bin_reader.c ../bbb_common/bin_reader.h
-	gcc $(CFLAGS) -c ../bbb_common/bin_reader.c
+obj/bin_reader.o: ../bbb_common/bin_reader.c ../bbb_common/bin_reader.h
+	gcc $(CFLAGS) -c ../bbb_common/bin_reader.c -o obj/bin_reader.o
 
-msg_queue.o: ../bbb_common/msg_queue.c ../bbb_common/msg_queue.h
-	gcc $(CFLAGS) -c ../bbb_common/msg_queue.c
+obj/msg_queue.o: ../bbb_common/msg_queue.c ../bbb_common/msg_queue.h
+	gcc $(CFLAGS) -c ../bbb_common/msg_queue.c -o obj/msg_queue.o
 
-pb_visualize.o: ../bbb_common/pb_visualize.c ../bbb_common/pb_visualize.h
-	gcc $(CFLAGS) -c ../bbb_common/pb_visualize.c
+obj/pb_visualize.o: ../bbb_common/pb_visualize.c ../bbb_common/pb_visualize.h
+	gcc $(CFLAGS) -c ../bbb_common/pb_visualize.c -o obj/pb_visualize.o
 
-bin_recognizer: fft4g_h.o bin_recognizer.c bin_reader.o msg_queue.o pb_visualize.o
-	gcc $(CFLAGS) -lm -o bin_recognizer bin_recognizer.c fft4g_h.o bin_reader.o msg_queue.o pb_visualize.o
+bin_recognizer: obj/fft4g_h.o bin_recognizer.c obj/bin_reader.o obj/msg_queue.o obj/pb_visualize.o
+	gcc $(CFLAGS) -lm -o bin_recognizer bin_recognizer.c obj/fft4g_h.o obj/bin_reader.o obj/msg_queue.o obj/pb_visualize.o
 
 clean:
-	rm -f sender drain pb_analyzer analyze.o fft4g_h.o bin_recognizer
+	rm -f *.o obj/*.o sender drain pb_analyzer bin_recognizer
 

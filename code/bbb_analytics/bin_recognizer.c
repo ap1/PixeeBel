@@ -356,19 +356,21 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
             {
                 max_energies[k] = cur_bin_energy;
                 best_channel = chId;
+
+                visualize_send( k, chId, cur_bin_energy);
             }
             //printf(" %s", bin_energies[chId * NR_ACTIVE_CHANNELS + k] >= 20.0 ? "#": " ");
             //printf(" %3.0f", bin_energies[chId * NR_ACTIVE_CHANNELS + k]);
         }
 
-        if(max_energies[k] >= (10.0 * running_avg_energy[k]))
-        {
-            visualize_send( k, best_channel );
-            printf("%d ", best_channel);
-        }else
-        {
-            printf("  ");
-        }
+        // if(max_energies[k] >= (10.0 * running_avg_energy[k]))
+        // {
+        //     visualize_send( k, best_channel, );
+        //     printf("%d ", best_channel);
+        // }else
+        // {
+        //     printf("  ");
+        // }
     }
     printf("\n");
 

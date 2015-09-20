@@ -51,8 +51,8 @@ def maybeDrainList( nowMs ):
 
    while queue and queue[-1][0] <= nowMs:
       # pop the last item
-      ( _, channelId, binId ) = queue.pop()
-      screen.hide( nowMs, channelId, binId, queue=queue )
+      ( _, channelId, binId, mag ) = queue.pop()
+      screen.hide( nowMs, channelId, binId, mag, queue=queue )
 
 
 if __name__ == "__main__":
@@ -84,13 +84,14 @@ if __name__ == "__main__":
          maybeDrainList( nowMs )
          continue
 
-      data, _ = sock.recvfrom( 4 )
+      data, _ = sock.recvfrom( 4, 6 )
 
       binId = struct.unpack( "!H", data[0:2] )[0]
       channelId = struct.unpack( "!H", data[2:4] )[0]
+      mag = struct.unpack( "!H", data[4:6] )[0]
 
-      queue.insert( 0, ( nowMs + visibleMs, channelId, binId ) )
-      screen.show( nowMs, channelId, binId, queue=queue )
+      queue.insert( 0, ( nowMs + visibleMs, channelId, binId, mag ) )
+      screen.show( nowMs, channelId, binId, mag, queue=queue )
 
       maybeDrainList( nowMs )
 

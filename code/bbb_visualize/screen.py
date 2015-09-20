@@ -129,12 +129,12 @@ class Display( object ):
 
       return [ int( x1 ), int( y1 ), math.ceil( x2 ), math.ceil( y2 ) ]
 
-   def show( self, edge, binId, queue=None ):
+   def show( self, edge, binId, mag=None, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_STRETCH )
       self.draw.line( coords, fill=FGCOLOR )
       self.refresh()
      
-   def hide( self, edge, binId, queue=None ):
+   def hide( self, edge, binId, mag=None, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_STRETCH )
       self.draw.line( coords, fill=BGCOLOR )
       self.refresh()
@@ -163,12 +163,51 @@ class RectDisplay( Display ):
 
       self.draw.rectangle( coords, fill=fill )
 
-   def show( self, edge, binId, queue=None ):
+   def show( self, edge, binId, mag=None, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
       self.drawRectangle( edge, coords, fill=FGCOLOR )
       self.refresh()
      
-   def hide( self, edge, binId, queue=None ):
+   def hide( self, edge, binId, mag=None, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
+      self.drawRectangle( edge, coords, fill=BGCOLOR )
+
+      for i in [ q for q in queue if edgeByChannelId[ q[2] ] == edge ]:
+         coords = self.coords( edge, q[1], coord=self.COORD_LINEAR_STRETCH )
+         self.drawRectangle( edge, coords, fill=FGCOLOR )
+
+      self.refresh()
+
+
+class MagDisplay( Display ):
+
+   def __init__( self, min_bin_freq, max_bin_freq ):
+      Display.__init__( self, min_bin_freq, max_bin_freq )
+
+   def drawRectangle( self, edge, coords, fill ):
+      depth = len( bins )
+
+      if edge == "f":
+         coords[ 1 ] = 0
+         coords[ 3 ] = depth
+      elif edge == "b":
+         coords[ 1 ] = LCD.LCDHEIGHT - 1 - depth
+         coords[ 3 ] = LCD.LCDHEIGHT - 1
+      elif edge == "r":
+         coords[ 0 ] = LCD.LCDWIDTH - 1 - depth
+         coords[ 2 ] = LCD.LCDWIDTH - 1
+      elif edge == "l":
+         coords[0] = 0
+         coords[2] = depth
+
+      self.draw.rectangle( coords, fill=fill )
+
+   def show( self, edge, binId, mag, queue=None ):
+      coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
+      self.drawRectangle( edge, coords, fill=FGCOLOR )
+      self.refresh()
+     
+   def hide( self, edge, binId, mag, queue=None ):
       coords = self.coords( edge, binId, coord=self.COORD_LINEAR_STRETCH )
       self.drawRectangle( edge, coords, fill=BGCOLOR )
 
@@ -189,18 +228,18 @@ def init():
       min_bin_freq = min( min_bin_freq, binValue["freq_low"] )
       max_bin_freq = max( max_bin_freq, binValue["freq_high"] )
 
-   display = Display( min_bin_freq, max_bin_freq )
+   display = MagDisplay( min_bin_freq, max_bin_freq )
 
 
-def show( nowMs, channelId, binId, queue=None ):
+def show( nowMs, channelId, binId, mag, queue=None ):
    edge = edgeByChannelId[ channelId ]
 #   print "+%d:\tedge %s bid %d" % ( nowMs, edge, binId )
-   display.show( edge, binId, queue=queue )
+   display.show( edge, binId, mag=mag, queue=queue )
 
-def hide( nowMs, channelId, binId, queue=None ):
+def hide( nowMs, channelId, binId, mag, queue=None ):
    edge = edgeByChannelId[ channelId ]
 #   print "-%d:\tedge %s bid %d" % ( nowMs, edge, binId )
-   display.hide( edge, binId, queue=queue )
+   display.hide( edge, binId, mag=mag, queue=queue )
 
 def stop():
    global interrupted

@@ -84,7 +84,7 @@ if __name__ == "__main__":
          maybeDrainList( nowMs )
          continue
 
-      data, _ = sock.recvfrom( 4, 6 )
+      data, _ = sock.recvfrom( 6 )
 
       binId = struct.unpack( "!H", data[0:2] )[0]
       channelId = struct.unpack( "!H", data[2:4] )[0]

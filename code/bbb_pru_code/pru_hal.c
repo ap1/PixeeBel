@@ -23,6 +23,10 @@ void shm_init(void)
   /* PRU0 by setting c28_pointer[15:0] field to 0x0120 */
   /* this will make C28 point to 0x00012000 (PRU shared RAM). */
 
+  /* github2k15 */
+  /* PRU0 by setting c28_pointer[15:0] field to 0x0100 */
+  /* this will make C28 point to 0x00010000 (PRU shared RAM). */
+
   /* save r4, r5 */
   __asm__ __volatile__
   (
@@ -32,7 +36,7 @@ void shm_init(void)
 
   __asm__ __volatile__
   (
-   " LDI32 r4, 0x0120 \n"
+   " LDI32 r4, 0x0100 \n"
    " LDI32 r5, 0x22028 \n"
    " SBBO &r4, r5, 0x00, 4 \n"
   );

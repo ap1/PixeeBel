@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/time.h>
+#include <stdint.h>
 
 #include "msg_queue.h"
 #include "pb_msg.h"
@@ -17,7 +18,7 @@
 #define SAMPLE_T 0.0001 // assuming 10 KHz sampling
 #define __DEB                    {printf("Reached %s (%d)\n",__FILE__,__LINE__);}
 #define MAXBINS 64
-#define NR_ACTIVE_CHANNELS 3
+#define NR_ACTIVE_CHANNELS 4
 
 double channels[NR_ACTIVE_CHANNELS][NMAX * 2];
 
@@ -131,7 +132,7 @@ void print_array(double* arr, int n)
     int j;
     for (j = 0; j < n; j++)
     {
-        printf("% 0.2f ", arr[j]);
+        printf("% f ", arr[j]);
     }
     printf("\n");
 }
@@ -229,12 +230,32 @@ void to_double(SAMPLE *samples, double *doubles, int n)
     }
 }
 
+void print_raw_channel(SAMPLE *samples, int n)
+{
+    int j;
+
+    for(j=0; j<n; j++)
+    {
+        printf("%x ", samples[j]);
+    }
+    printf("\n");
+}
+
 void remove_dc_component(double* data, int n, double meanvalue, double stdev)
 {
     int j;
     for(j=0; j<n; j++)
     {
         data[j] = ((data[j] - meanvalue));// / stdev);
+    }
+}
+
+void scale_signal(double* data, int n, double scale)
+{
+    int j;
+    for(j=0; j<n; j++)
+    {
+        data[j] *= scale;// / stdev);
     }
 }
 
@@ -289,6 +310,32 @@ initialize_running_energies(int nbins)
     }
 }
 
+void calculate_differences_in_channels()
+{
+    double sum[NMAX];
+    int j, c;
+    double nch = (double)NR_ACTIVE_CHANNELS;
+
+    for(j = 0; j < NMAX; j++)
+    {
+        sum[j] = 0.0;
+        for(c = 0; c < NR_ACTIVE_CHANNELS; c++)
+        {
+            sum[j] += channels[c][j];
+        }
+        for(c = 0; c < NR_ACTIVE_CHANNELS; c++)
+        {
+            // we want c[j] = c[j] - ((sum(c[:]) - c[j]) / NR_ACTIVE_CHANNELS)
+            // = ((NR_ACTIVE_CHANNELS + 1) c[j] - sum(c[:])) / NR_ACTIVE_CHANNELS
+
+            channels[c][j] =
+                (channels[c][j] * (nch + 1.0) - sum[j] * 1.0f) / nch;
+            // printf("%f = (%f * %f - %f ) / %f\n",
+            //     channels[c][j], channels[c][j], (nch + 1.0), sum[j], nch);
+        }
+    }
+}
+
 void update_running_energies(double *bin_energies, int nbins, double* running_avg_energy)
 {
     int k, c;
@@ -309,6 +356,22 @@ void update_running_energies(double *bin_energies, int nbins, double* running_av
     }
 }
 
+double saturate(double f)
+{
+    return (f > 1.0 ? 1.0 : (f < 0.0 ? 0.0 : f));
+}
+
+void swap_data(double* data0, double* data1, int n)
+{
+    int j;
+    for(j=0; j<n; j++)
+    {
+        double d = data0[j];
+        data0[j] = data1[j];
+        data1[j] = d;
+    }
+}
+
 void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
 {
     int chId, k;
@@ -323,6 +386,8 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
     // -- fetch channel data -- //
     for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
     {
+        //printf("-- %d --\n", chId);
+        //print_raw_channel(m->data[chId], NMAX);
         to_double(m->data[chId], channels[chId], NMAX);
     }
 
@@ -332,7 +397,20 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
     for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
     {
         remove_dc_component(channels[chId], NMAX, avgs[chId], stdevs[chId]);
-        printf("% 5.1f %4.1f | ", avgs[chId], stdevs[chId]);
+        scale_signal(channels[chId], NMAX, 1500.0/avgs[chId]);
+    }
+
+    calculate_differences_in_channels();
+
+    // for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
+    // {
+    //     printf("-- %d --\n", chId);
+    //     print_array(channels[chId], 16);
+    // }
+
+    for (chId = 0; chId < NR_ACTIVE_CHANNELS; ++chId)
+    {
+        //printf("% 5.1f %4.1f | ", avgs[chId], stdevs[chId]);
         {   // -- compute FFT -- //
             to_complex(channels[chId], NMAX);
             cdft(NMAX * 2, -1, channels[chId]); // -1 for some reason matches python/numpy
@@ -357,11 +435,24 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
                 max_energies[k] = cur_bin_energy;
                 best_channel = chId;
 
-                visualize_send( k, chId, cur_bin_energy);
+                //printf("%0.2f\n", cur_bin_energy);
             }
+
             //printf(" %s", bin_energies[chId * NR_ACTIVE_CHANNELS + k] >= 20.0 ? "#": " ");
             //printf(" %3.0f", bin_energies[chId * NR_ACTIVE_CHANNELS + k]);
         }
+
+        float saturated_energy = saturate(max_energies[k] / 7500.0);
+
+        if(best_channel == 2)       best_channel = 3;
+        else if(best_channel == 3)  best_channel = 2;
+
+        visualize_send(
+            (uint16_t)k, 
+            (uint16_t)best_channel, 
+            (uint16_t)(65535.0 * saturated_energy));
+
+        //printf("%f\n", max_energies[k]);
 
         // if(max_energies[k] >= (10.0 * running_avg_energy[k]))
         // {
@@ -372,7 +463,7 @@ void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
         //     printf("  ");
         // }
     }
-    printf("\n");
+    //printf("\n");
 
     free(bin_energies);
     free(max_energies);

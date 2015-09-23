@@ -56,11 +56,13 @@ static int cm_wkup_enable_adc_tsc(void)
 }
 
 
+#define SHM_OFFSET         (0)
+
 static int
 read_header( struct header *hp )
 {
-	static const size_t sharedram_offset = 2048;
 	volatile uint32_t* p;
+	static const size_t sharedram_offset = SHM_OFFSET / sizeof( *p );
 
 	prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&p);
 
@@ -73,7 +75,7 @@ read_header( struct header *hp )
 static int
 read_channel_data( struct header *hp, msg *m )
 {
-	static const size_t sharedram_offset = 2048 * 4;
+	static const size_t sharedram_offset = SHM_OFFSET;
 	size_t data_offset = sizeof( struct header ) + ( ( hp->seqno - 1 ) % 2 ) * MSG_DATA_SIZE;
 	volatile char *p;
 
@@ -246,6 +248,7 @@ main( int argc, char *argv[] )
       prussdrv_pru_clear_event( PRU_EVTOUT_0, PRU0_ARM_DONE_INTERRUPT );
 
       read_header( &hdr );
+      printf( "%x\n", hdr.magic );
 
       read_channel_data( &hdr, &m );
 

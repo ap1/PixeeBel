@@ -189,16 +189,20 @@ class MagDisplay( Display ):
       depth = mag * len( bins ) / MAX_UINT
 
       if edge == "f":
-         coords[ 1 ] = 0
+#         coords[ 1 ] = 0
+         coords[ 1 ] = depth
          coords[ 3 ] = depth
       elif edge == "b":
          coords[ 1 ] = LCD.LCDHEIGHT - 1 - depth
-         coords[ 3 ] = LCD.LCDHEIGHT - 1
+#         coords[ 3 ] = LCD.LCDHEIGHT - 1
+         coords[ 3 ] = LCD.LCDHEIGHT - 1 - depth
       elif edge == "r":
          coords[ 0 ] = LCD.LCDWIDTH - 1 - depth
-         coords[ 2 ] = LCD.LCDWIDTH - 1
+         coords[ 2 ] = LCD.LCDWIDTH - 1 - depth
+#         coords[ 2 ] = LCD.LCDWIDTH - 1
       elif edge == "l":
-         coords[0] = 0
+#         coords[0] = 0
+         coords[0] = depth
          coords[2] = depth
 
 #      self.draw.rectangle( coords, fill=fill )

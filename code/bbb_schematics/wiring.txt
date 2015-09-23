@@ -13,6 +13,30 @@ RST   PIN7        P9_12
 
 
 
+On the board, the display header:
+
+
+   +-------------+
+   |      6543   |
+   |      oooo   |
+   | 1  2 oooo   +-----------+
+   |  oo  8721               |
+   |  oo                     |
+   |5 oo 6                   |
+   |7 oo 8                   |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |  oo                     |
+   |45  46                   |
+   |                         |
+   +-------------------------+
+
+
 Audio Amplifier to Beaglebone Black
 -----------------------------------
 

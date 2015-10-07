@@ -51,6 +51,8 @@ void analyze_bin(double* mags, double* freqs, int n, bin* bins, int nbins, doubl
 void analyze_msg(msg* m, double* freqs, bin* bins, int nbins);
 void initialize_running_sums();
 
+// main: prepares structs and runs the main loop
+// which receives all packets
 int main()
 {
     double *arr, *freqs;
@@ -113,6 +115,8 @@ int main()
     return 0;
 }
 
+// simple function to set all values in an array
+// to a constant
 void put_values(double* arr, int n, double val)
 {
     int j;
@@ -122,11 +126,14 @@ void put_values(double* arr, int n, double val)
     }      
 }
 
+// simple function to zero out all values in an
+// array
 void put_zeros(double* arr, int n)
 {
     put_values(arr, n, 0.0);
 }
 
+// simple function to print values in an array
 void print_array(double* arr, int n)
 {
     int j;
@@ -137,6 +144,8 @@ void print_array(double* arr, int n)
     printf("\n");
 }
 
+// simple function to create an array of random
+// values
 void generate_array(double* arr, int n)
 {
     int j, seed = 0;
@@ -146,6 +155,8 @@ void generate_array(double* arr, int n)
     }
 }
 
+// function to convert real array (of size n) to complex
+// by inserting interleaving zeroes
 void to_complex(double* arr, int n)
 {
     int j;
@@ -156,6 +167,8 @@ void to_complex(double* arr, int n)
     }
 }
 
+// function to compute magnitude of complex values
+// in an array (n complex values, 2n doubles)
 void complex_magnitude(double *arr, int n_real)
 {
     int j;
@@ -167,6 +180,8 @@ void complex_magnitude(double *arr, int n_real)
     }
 }
 
+// compute list of frequencies for an n-point fft
+// same as scipy/numpy version
 void fftfreq(double* arr, int n, float d)
 {
     int j;
@@ -182,6 +197,8 @@ void fftfreq(double* arr, int n, float d)
     }
 }
 
+// computes per-bin avg energy (as RMS value)
+// given the frequency domain response of a signal
 void analyze_bin(double* mags, double* freqs, int n, bin* bins, int nbins, double* bin_energies)
 {
     // -- for the bin, find if peak exists and energy in the bin -- //
@@ -220,6 +237,7 @@ void analyze_bin(double* mags, double* freqs, int n, bin* bins, int nbins, doubl
     free(bin_counts);
 }
 
+// converts samples to doubles
 void to_double(SAMPLE *samples, double *doubles, int n)
 {
     int j;
@@ -230,6 +248,7 @@ void to_double(SAMPLE *samples, double *doubles, int n)
     }
 }
 
+// display raw data for a channel (array of SAMPLEs)
 void print_raw_channel(SAMPLE *samples, int n)
 {
     int j;
@@ -241,6 +260,8 @@ void print_raw_channel(SAMPLE *samples, int n)
     printf("\n");
 }
 
+// subtract constant value from a signal
+// can also divide the resultant by another constant
 void remove_dc_component(double* data, int n, double meanvalue, double stdev)
 {
     int j;
@@ -250,6 +271,7 @@ void remove_dc_component(double* data, int n, double meanvalue, double stdev)
     }
 }
 
+// scale a signal by a constant value
 void scale_signal(double* data, int n, double scale)
 {
     int j;
@@ -259,6 +281,7 @@ void scale_signal(double* data, int n, double scale)
     }
 }
 
+// reset values of running signal sums
 void initialize_running_sums()
 {
     int j;
@@ -270,11 +293,13 @@ void initialize_running_sums()
     running_count = 0.0;
 }
 
+// get standard deviation given square sum, avg, and count of a signal
 double getStdev(double sqr_sum, double count, double avg)
 {
     return sqrt((sqr_sum / count) - avg * avg);
 }
 
+// update running rum using data from current packet.
 void update_running_sums(double* avgs, double* stdevs)
 {
     int c,j;
@@ -298,6 +323,7 @@ void update_running_sums(double* avgs, double* stdevs)
     if(running_count > 100000) initialize_running_sums();
 }
 
+// initializing running sums for bin energies
 initialize_running_energies(int nbins)
 {
     int k, c;
@@ -310,6 +336,9 @@ initialize_running_energies(int nbins)
     }
 }
 
+// subtract channels from each other
+// each channel is replaced by the difference between
+// it and the average of all other channels
 void calculate_differences_in_channels()
 {
     double sum[NMAX];
@@ -336,6 +365,8 @@ void calculate_differences_in_channels()
     }
 }
 
+// update running energy sum/count using data
+// from current packet.
 void update_running_energies(double *bin_energies, int nbins, double* running_avg_energy)
 {
     int k, c;
@@ -356,11 +387,13 @@ void update_running_energies(double *bin_energies, int nbins, double* running_av
     }
 }
 
+// saturate a double
 double saturate(double f)
 {
     return (f > 1.0 ? 1.0 : (f < 0.0 ? 0.0 : f));
 }
 
+// swap two signals
 void swap_data(double* data0, double* data1, int n)
 {
     int j;
@@ -372,6 +405,7 @@ void swap_data(double* data0, double* data1, int n)
     }
 }
 
+// main function, analyzes a packet of 4 channels
 void analyze_msg(msg* m, double* freqs, bin* bins, int nbins)
 {
     int chId, k;
